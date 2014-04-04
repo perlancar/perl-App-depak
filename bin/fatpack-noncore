@@ -1,0 +1,46 @@
+#!/usr/bin/env perl
+
+use 5.010001;
+use strict;
+use warnings;
+
+use Perinci::CmdLine;
+
+# VERSION
+
+Perinci::CmdLine->new(
+    url => '/App/FatPacker/NonCore/fatpack_noncore')->run;
+
+#ABSTRACT: Produce Perl script that only depends on core modules
+#PODNAME: fatpack-noncore
+
+=head1 SYNOPSIS
+
+ # by default targets current perl version and outputs to SCRIPT.packed
+ % fatpack-noncore bin/script.pl
+
+ # set target perl version, set output file, see debug logs
+ % fatpack-noncore --perl-version v5.10.1 -o /tmp/script.pl --debug bin/script.pl
+
+ # see more options
+ % fatpack-noncore --help
+
+
+=head1 DESCRIPTION
+
+This script is a wrapper around L<fatpack>. It aims to produce a packed script
+that can run on a stock Perl installation that has only core modules. Thus, it
+packs all non-core modules required by the script.
+
+
+=head1 TODO/ISSUES
+
+=over
+
+=item * 'fatpack trace' doesn't give minimum version of required modules
+
+Perhaps alternatively use L<Perl::PrereqScanner> or something like?
+
+=item * Hasn't handled the case of modules that are core in an earlier version of perl but become non-core in a later version
+
+=back
