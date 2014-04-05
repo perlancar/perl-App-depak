@@ -1,4 +1,4 @@
-package App::FatPacker::NonCore;
+package App::fatten;
 
 use 5.010001;
 use strict;
