@@ -18,7 +18,8 @@ use List::Util qw(first);
 use Log::Any::For::Builtins qw(system my_qx);
 use Module::CoreList;
 use Module::Path qw(module_path);
-use SHARYANTO::Dist::Util qw(packlist_for);
+#use SHARYANTO::Dist::Util qw(packlist_for);
+use SHARYANTO::Module::Util qw(is_xs);
 use SHARYANTO::Proc::ChildError qw(explain_child_error);
 use String::ShellQuote;
 use version;
@@ -29,16 +30,56 @@ sub _sq { shell_quote($_[0]) }
 
 our %SPEC;
 
+# add module to list to be included, return 1 if module is added the first time.
+sub _consider_module {
+    my ($self, $mod) = @_;
+
+    my $sm = $self->{seen_mods};
+
+    return 0 if exists $sm->{$mod};
+
+    if ($self->{skip_not_found} && !module_path($mod)) {
+        $sm->{$mod} = 0;
+        $log->warn("  Skipped: $mod (not found)");
+        return 0;
+    }
+    if ($mod ~~ @{ $self->{exclude_modules} }) {
+        $sm->{$mod} = 0;
+        $log->warn("  Skipped: $mod (excluded)");
+        return 0;
+    }
+    for (@{ $self->{exclude_module_patterns} }) {
+        if ($mod ~~ $_) {
+            $sm->{$mod} = 0;
+            $log->warn("  Skipped: $mod (excluded $_)");
+            return 0;
+        }
+    }
+    my $pm = $mod; $pm =~ s!/!::!g; $pm =~ s/\.pm\z//;
+    my $is_core = Module::CoreList::is_core($pm, undef, $self->{perl_version});
+    if ($is_core && !($mod ~~ @{ $self->{include_modules} })) {
+        $sm->{$mod} = 0;
+        $log->warn("  Skipped: $mod (core)");
+        return 0;
+    }
+    if (is_xs($mod)) {
+        $sm->{$mod} = 0;
+        $log->warn("  Skipped: $mod (XS)");
+        return 0;
+    }
+    $log->info("  Added: $mod");
+    $sm->{$mod} = 1;
+    1;
+}
+
 sub _trace_with_fatpack {
     my $self = shift;
 
     my $tempdir = $self->{tempdir};
 
+    my @new;
     for my $mod (@{ $self->{include_modules} }) {
-        next if $mod ~~ @{ $self->{exclude_modules} };
-        $log->info("  Adding: $mod");
-        require $mod;
-        $self->{mods}{$mod}++;
+        push @new, $mod if $self->_consider_module($mod);
     }
 
     my $tracef = "$tempdir/fatpacker.trace";
@@ -52,45 +93,35 @@ sub _trace_with_fatpack {
     open my($fh), "<", $tracef or die "Can't open $tracef: $!";
     while (my $mod = <$fh>) {
         chomp($mod);
-        next if $self->{mods}{$mod};
-        my $pm = $mod; $pm =~ s!/!::!g; $pm =~ s/\.pm\z//;
-        my $is_core = Module::CoreList::is_core(
-            $pm, undef, $self->{perl_version});
-        do { $log->debug("  Excluding: $mod (excluded)"); next }
-            if $mod ~~ @{ $self->{exclude_modules} };
-        do { $log->debug("  Excluding: $mod (core)"); next }
-            if !$self->{mods}{$mod} && $is_core;
-        $log->info("  Adding: $mod");
-        $self->{mods}{$mod}++;
+        push @new, $mod if $self->_consider_module($mod);
+    }
+
+    if ($self->{use_prereq_scanner}) {
+        $self->_trace_with_prereq_scanner($_) for sort @new;
     }
 }
 
 sub _trace_with_prereq_scanner {
-    my $self = shift;
-}
+    my ($self, $mod) = @_;
 
-# just emit some warnings
-sub _check_modules {
-    my $self = shift;
+    $log->debug("  Analyzing $mod with PrereqScanner ...");
 
-    my %packlists; # key = path
+    state $scanner = do {
+        require Perl::PrereqScanner;
+        Perl::PrereqScanner->new;
+    };
 
-    for my $mod (sort keys %{ $self->{mods} }) {
-        my $path = packlist_for($mod);
-        next unless $path;
-        $log->debugf("  Found packlist for %s at %s", $mod, $path);
-        next if $packlists{$path}++;
-        my @files = slurp_c($path);
-        if (first { /\.(so|bs)\z/ } @files) {
-            $log->warnf("  Warning: $mod is XS module, won't pack properly");
-        }
-        #if (first { m!/(bin|script)/! } @files) {
-        #    $log->warnf("  Note: $mod contains scripts");
-        #}
-        if (first { m!/LocaleData/! } @files) {
-            $log->warnf("  Warning: $mod contains locale date (message catalogs, etc), not included");
-        }
+    my @new;
+    my $res = $scanner->scan_module($mod)->as_string_hash;
+    for my $m0 (keys %$res) {
+        next if $m0 =~ /\A(perl)\z/;
+
+        my $m = $m0; $m =~ s!::!/!g; $m .= ".pm";
+        push @new, $m if $self->_consider_module($m);
     }
+
+    # proceed recursively
+    $self->_trace_with_prereq_scanner($_) for sort @new;
 }
 
 sub _build_lib {
@@ -103,7 +134,8 @@ sub _build_lib {
 
     local $CWD = "$tempdir/lib";
 
-    for my $mod (keys %{ $self->{mods} }) {
+    my $sm = $self->{seen_mods};
+    for my $mod (sort(grep {$sm->{$_}} keys %$sm)) {
         my $mpath = module_path($mod) or die "Can't find path for $mod";
         my ($dir) = $mod =~ m!(.+)/(.+)!;
         if ($dir) {
@@ -174,6 +206,7 @@ here. Either specify in the form of `Package::SubPkg` or `Package/SubPkg.pm`.
 
 _
             schema => ['array*' => of => 'str*'],
+            cmdline_aliases => { I => {} },
         },
         exclude_modules => {
             summary => 'Modules to exclude',
@@ -184,6 +217,18 @@ form of `Package::SubPkg` or `Package/SubPkg.pm`.
 
 _
             schema => ['array*' => of => 'str*'],
+            cmdline_aliases => { E => {} },
+        },
+        exclude_module_patterns => {
+            summary => 'Regex patterns of modules to exclude',
+            description => <<'_',
+
+When you don't want to include a pattern of modules, specify it here. The regex
+will be matched against module name in the form `Package/SubPkg.pm`.
+
+_
+            schema => ['array*' => of => 'str*'],
+            cmdline_aliases => { p => {} },
         },
         perl_version => {
             summary => 'Perl version to target, defaults to current running version',
@@ -194,9 +239,40 @@ _
         #    schema => [bool => default => 0],
         #    summary => 'Whether to overwrite output if previously exists',
         #},
+        use_prereq_scanner => {
+            summary => 'Whether to use Perl::PrereqScanner to detect required modules',
+            schema => ['bool', default=>1],
+            description => <<'_',
+
+Since fatpack uses `perl -c`, it might miss a few modules. You can add more
+modules manually via `include_modules` or let Perl::PrereqScanner does a static
+analysis of script/module source code. This on the other hand is usually too
+aggressive, as it will include modules in cases like this:
+
+    if ($some_feature_or_os) {
+        require Win32::Console::ANSI;
+    }
+
+and you'll need to exclude some modules from being recursively searched using
+`exclude_modules` or `exclude_module_patterns`.
+
+_
+            cmdline_aliases => { V=>{} },
+        },
+        skip_not_found => {
+            summary => 'Instead of dying, skip modules that are not found',
+            schema => 'bool',
+            description => <<'_',
+
+Unless you explicitly set it, this option is automatically turned on when you
+use `use_prereq_scanner`.
+
+_
+        },
         strip => {
             summary => 'Whether to strip included modules using Perl::Stripper',
             schema => ['bool' => default=>0],
+            cmdline_aliases => { s=>{} },
         },
         # XXX strip_opts
     },
@@ -212,16 +288,21 @@ sub fatten {
     $log->debugf("Created tempdir %s", $tempdir);
     $self->{tempdir} = $tempdir;
 
+    $self->{skip_not_found} //= 1 if $self->{use_prereq_scanner};
 
     $self->{include_modules} //= [];
     $self->{exclude_modules} //= [];
-
     for my $list ($self->{include_modules}, $self->{exclude_modules}) {
         for my $mod (@$list) {
             unless ($mod =~ /\.pm\z/) {
                 $mod =~ s!::!/!g; $mod .= ".pm";
             }
         }
+    }
+
+    $self->{exclude_module_patterns} //= [];
+    for (@{ $self->{exclude_module_patterns} }) {
+        $_ = qr/$_/;
     }
 
     # my understanding is that fatlib contains the stuffs beside the pure-perl
@@ -237,18 +318,16 @@ sub fatten {
     $self->{abs_input_file} = abs_path($self->{input_file})
         or die "Can't find absolute path of input file $self->{input_file}";
 
-    $self->{output_file} = "$self->{input_file}.packed";
+    $self->{output_file} //= "$self->{input_file}.packed";
     $self->{abs_output_file} = abs_path($self->{output_file})
         or die "Can't find absolute path of output file $self->{output_file}";
 
-    $self->{mods} = {}; # key = Package/SubPkg.pm, ...
+    # list of modules that have been considered. key = Package/SubPkg.pm, val =
+    # 1 if to be added, 0 if to be excluded
+    $self->{seen_mods} = {};
 
     $log->infof("Tracing modules to be included ...");
     $self->_trace_with_fatpack;
-    $self->_trace_with_prereq_scanner;
-
-    $log->infof("Checking modules to be included ...");
-    $self->_check_modules;
 
     $log->infof("Building lib/ ...");
     $self->_build_lib;

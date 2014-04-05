@@ -35,7 +35,11 @@ stuffs like shared files, message catalogs (C<.mo>), etc.
 
 By default it aims to produce a packed script that can run on a stock Perl
 installation that has only core modules. Thus, it packs all non-core modules
-required by the script.
+required by the script. However, since it doesn't handle XS modules, in many
+cases this goal is not reachable, e.g. popularly-used modules like
+L<List::MoreUtils> is XS. If you want to create an installer or bootstrap script
+that can only rely on core modules, you have to select modules you use
+carefully.
 
 
 =head1 TODO/ISSUES
