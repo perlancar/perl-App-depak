@@ -29,6 +29,127 @@ sub _sq { shell_quote($_[0]) }
 
 our %SPEC;
 
+sub _trace_with_fatpack {
+    my $self = shift;
+
+    my $tempdir = $self->{tempdir};
+
+    for my $mod (@{ $self->{include_modules} }) {
+        next if $mod ~~ @{ $self->{exclude_modules} };
+        $log->info("  Adding: $mod");
+        require $mod;
+        $self->{mods}{$mod}++;
+    }
+
+    my $tracef = "$tempdir/fatpacker.trace";
+    system("fatpack", "trace", "--to", $tracef, $self->{abs_input_file});
+    die "Can't fatpack trace: ".explain_child_error() if $?;
+
+    # i'm not having much success using the 'fatpack packlists-for' and 'fatpack
+    # tree' commands. so i'm adding the .pm files directly here for now, and
+    # later finally using 'fatpack file'.
+
+    open my($fh), "<", $tracef or die "Can't open $tracef: $!";
+    while (my $mod = <$fh>) {
+        chomp($mod);
+        next if $self->{mods}{$mod};
+        my $pm = $mod; $pm =~ s!/!::!g; $pm =~ s/\.pm\z//;
+        my $is_core = Module::CoreList::is_core(
+            $pm, undef, $self->{perl_version});
+        do { $log->debug("  Excluding: $mod (excluded)"); next }
+            if $mod ~~ @{ $self->{exclude_modules} };
+        do { $log->debug("  Excluding: $mod (core)"); next }
+            if !$self->{mods}{$mod} && $is_core;
+        $log->info("  Adding: $mod");
+        $self->{mods}{$mod}++;
+    }
+}
+
+sub _trace_with_prereq_scanner {
+    my $self = shift;
+}
+
+# just emit some warnings
+sub _check_modules {
+    my $self = shift;
+
+    my %packlists; # key = path
+
+    for my $mod (sort keys %{ $self->{mods} }) {
+        my $path = packlist_for($mod);
+        next unless $path;
+        $log->debugf("  Found packlist for %s at %s", $mod, $path);
+        next if $packlists{$path}++;
+        my @files = slurp_c($path);
+        if (first { /\.(so|bs)\z/ } @files) {
+            $log->warnf("  Warning: $mod is XS module, won't pack properly");
+        }
+        #if (first { m!/(bin|script)/! } @files) {
+        #    $log->warnf("  Note: $mod contains scripts");
+        #}
+        if (first { m!/LocaleData/! } @files) {
+            $log->warnf("  Warning: $mod contains locale date (message catalogs, etc), not included");
+        }
+    }
+}
+
+sub _build_lib {
+    my $self = shift;
+
+    my $tempdir = $self->{tempdir};
+
+    my $totsize = 0;
+    my $totfiles = 0;
+
+    local $CWD = "$tempdir/lib";
+
+    for my $mod (keys %{ $self->{mods} }) {
+        my $mpath = module_path($mod) or die "Can't find path for $mod";
+        my ($dir) = $mod =~ m!(.+)/(.+)!;
+        if ($dir) {
+            make_path($dir) unless -d $dir;
+        }
+        if ($self->{strip}) {
+            state $stripper = do {
+                require Perl::Stripper;
+                Perl::Stripper->new;
+            };
+            $log->debug("  Stripping $mpath --> $mod ...");
+            my $src = slurp($mpath);
+            my $stripped = $stripper->strip($src);
+            write_file($mod, $stripped);
+        } else {
+            $log->debug("  Copying $mpath --> $mod ...");
+            copy($mpath, $mod);
+        }
+        $totfiles++;
+        $totsize += (-s $mod);
+    }
+    $log->infof("  Added %d files (%.1f KB)", $totfiles, $totsize/1024);
+}
+
+sub _pack {
+    my $self = shift;
+
+    my $tempdir = $self->{tempdir};
+
+    local $CWD = $tempdir;
+    system join(
+        "",
+        "fatpack file ",
+        _sq($self->{abs_input_file}), " > ",
+        _sq($self->{abs_output_file}),
+    );
+    die "Can't fatpack file: ".explain_child_error() if $?;
+    $log->infof("  Produced %s (%.1f KB)",
+                $self->{abs_output_file}, (-s $self->{abs_output_file})/1024);
+}
+
+sub new {
+    my $class = shift;
+    bless { @_ }, $class;
+}
+
 $SPEC{fatten} = {
     v => 1.1,
     args => {
@@ -85,11 +206,17 @@ _
 };
 sub fatten {
     my %args = @_;
+    my $self = __PACKAGE__->new(%args);
 
-    my $incl = $args{include_modules} // [];
-    my $excl = $args{exclude_modules} // [];
+    my $tempdir = tempdir(CLEANUP => 1);
+    $log->debugf("Created tempdir %s", $tempdir);
+    $self->{tempdir} = $tempdir;
 
-    for my $list ($excl, $incl) {
+
+    $self->{include_modules} //= [];
+    $self->{exclude_modules} //= [];
+
+    for my $list ($self->{include_modules}, $self->{exclude_modules}) {
         for my $mod (@$list) {
             unless ($mod =~ /\.pm\z/) {
                 $mod =~ s!::!/!g; $mod .= ".pm";
@@ -97,134 +224,45 @@ sub fatten {
         }
     }
 
-    my $tempdir = tempdir(CLEANUP => 0);
-    $log->debugf("Created tempdir %s", $tempdir);
-
     # my understanding is that fatlib contains the stuffs beside the pure-perl
     # .pm files, and currently won't pack anyway.
     #mkdir "$tempdir/fatlib";
     mkdir "$tempdir/lib";
 
-    my $plver = version->parse($args{perl_version} // $^V);
-    $log->debugf("Will be targetting perl %s", $plver);
+    $self->{perl_version} //= $^V;
+    $self->{perl_version} = version->parse($self->{perl_version});
+    $log->debugf("Will be targetting perl %s", $self->{perl_version});
 
-    my $inputf = $args{input_file};
-    (-f $inputf) or return [500, "Can't find input file $inputf"];
-    my $abs_inputf = abs_path($inputf)
-        or return [500, "Can't find path to input file $inputf"];
+    (-f $self->{input_file}) or die "No such input file: $self->{input_file}";
+    $self->{abs_input_file} = abs_path($self->{input_file})
+        or die "Can't find absolute path of input file $self->{input_file}";
 
-    my $outputf = $args{output_file} || "$inputf.packed";
-    my $abs_outputf = abs_path($outputf)
-        or return [500, "Can't find path to output file $outputf"];
+    $self->{output_file} = "$self->{input_file}.packed";
+    $self->{abs_output_file} = abs_path($self->{output_file})
+        or die "Can't find absolute path of output file $self->{output_file}";
 
-    my %mods; # key = Package/SubPkg.pm, ...
+    $self->{mods} = {}; # key = Package/SubPkg.pm, ...
+
     $log->infof("Tracing modules to be included ...");
-    # XXX option to use Perl::PrereqScanner or other methods
-    {
-        for my $mod (@$incl) {
-            next if $mod ~~ @$excl;
-            $log->info("  Adding: $mod");
-            require $mod;
-            $mods{$mod}++;
-        }
-
-        my $tracef = "$tempdir/fatpacker.trace";
-        system("fatpack", "trace", "--to", $tracef, $inputf);
-        return [500, "Can't fatpack trace: ".explain_child_error()] if $?;
-
-        # i'm not having much success using the 'fatpack packlists-for' and
-        # 'fatpack tree' commands. so i'm adding the .pm files directly here for
-        # now, and later finally using 'fatpack file'.
-
-        open my($fh), "<", $tracef or return [500, "Can't open $tracef: $!"];
-        while (my $mod = <$fh>) {
-            chomp($mod);
-            next if $mods{$mod};
-            my $pm = $mod; $pm =~ s!/!::!g; $pm =~ s/\.pm\z//;
-            my $is_core = Module::CoreList::is_core($pm, undef, $plver);
-            do { $log->debug("  Excluding: $mod (excluded)"); next }
-                if $mod ~~ @$excl;
-            do { $log->debug("  Excluding: $mod (core)"); next }
-                if !$mods{$mod} && $is_core;
-            $log->info("  Adding: $mod");
-            $mods{$mod}++;
-        }
-    }
+    $self->_trace_with_fatpack;
+    $self->_trace_with_prereq_scanner;
 
     $log->infof("Checking modules to be included ...");
-    {
-        my %packlists; # key = path
-
-        for my $mod (sort keys %mods) {
-            my $path = packlist_for($mod);
-            next unless $path;
-            $log->debugf("  Found packlist for %s at %s", $mod, $path);
-            next if $packlists{$path}++;
-            my @files = slurp_c($path);
-            if (first { /\.(so|bs)\z/ } @files) {
-                $log->warnf("  Warning: $mod contains XS modules, won't pack properly");
-            }
-            #if (first { m!/(bin|script)/! } @files) {
-            #    $log->warnf("  Note: $mod contains scripts");
-            #}
-            if (first { m!/LocaleData/! } @files) {
-                $log->warnf("  Warning: $mod contains locale date (message catalogs, etc), not included");
-            }
-        }
-    }
+    $self->_check_modules;
 
     $log->infof("Building lib/ ...");
-    my $totsize = 0;
-    my $totfiles = 0;
-    {
-        local $CWD = "$tempdir/lib";
-        for my $mod (keys %mods) {
-            my $mpath = module_path($mod)
-                or return [500, "Can't find path for $mod"];
-            my ($dir) = $mod =~ m!(.+)/(.+)!;
-            if ($dir) {
-                make_path($dir) unless -d $dir;
-            }
-            if ($args{strip}) {
-                state $stripper = do {
-                    require Perl::Stripper;
-                    Perl::Stripper->new;
-                };
-                $log->debug("  Stripping $mpath --> $mod ...");
-                my $src = slurp($mpath);
-                my $stripped = $stripper->strip($src);
-                write_file($mod, $stripped);
-            } else {
-                $log->debug("  Copying $mpath --> $mod ...");
-                copy($mpath, $mod);
-            }
-            $totfiles++;
-            $totsize += (-s $mod);
-        }
-        $log->infof("  Added %d files (%.1f KB)", $totfiles, $totsize/1024);
-    }
+    $self->_build_lib;
 
     $log->infof("Packing ...");
-    {
-        local $CWD = $tempdir;
-        system "fatpack file "._sq($abs_inputf)." > "._sq($abs_outputf);
-        return [500, "Can't fatpack file: ".explain_child_error()] if $?;
-        $log->infof("  Produced %s (%.1f KB)",
-                    $abs_outputf, (-s $outputf)/1024);
-    }
-
-    if ($log->is_debug) {
-        $log->debug("Not cleaning up tempdir $tempdir for debugging");
-    } else {
-        $log->debug("Cleaning up tempdir $tempdir ...");
-        remove_tree($tempdir);
-    }
+    $self->_pack;
 
     [200];
 }
 
 1;
 # ABSTRACT: Pack your dependencies onto your script file
+
+=for Pod::Coverage ^(new)$
 
 =head1 SYNOPSIS
 
