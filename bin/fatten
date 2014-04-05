@@ -8,29 +8,34 @@ use Perinci::CmdLine;
 
 # VERSION
 
-Perinci::CmdLine->new(
-    url => '/App/FatPacker/NonCore/fatpack_noncore')->run;
+Perinci::CmdLine->new(url => '/App/fatten/fatten')->run;
 
-#ABSTRACT: Produce Perl script that only depends on core modules
-#PODNAME: fatpack-noncore
+#ABSTRACT: Pack your dependencies onto your script file
+#PODNAME: fatten
 
 =head1 SYNOPSIS
 
- # by default targets current perl version and outputs to SCRIPT.packed
- % fatpack-noncore bin/script.pl
+ # by default includes all non-core modules and outputs to <INPUT>.packed
+ % fatten bin/script.pl
 
- # set target perl version, set output file, see debug logs
- % fatpack-noncore --perl-version v5.10.1 -o /tmp/script.pl --debug bin/script.pl
+ # some options (set target perl version, output, debug)
+ % fatten --perl-version v5.10.1 -o /tmp/script.pl --debug bin/script.pl
 
  # see more options
- % fatpack-noncore --help
+ % fatten --help
 
 
 =head1 DESCRIPTION
 
-This script is a wrapper around L<fatpack>. It aims to produce a packed script
-that can run on a stock Perl installation that has only core modules. Thus, it
-packs all non-core modules required by the script.
+B<fatten> uses L<App::FatPacker> to package a Perl script with its dependencies.
+B<fatten> simplifies the packing process, adds some nice defaults and options
+(like C<--strip>). It has the same limitation as App::FatPacker's, in that
+currently it only pack .pm Perl module files and not XS modules or other extra
+stuffs like shared files, message catalogs (C<.mo>), etc.
+
+By default it aims to produce a packed script that can run on a stock Perl
+installation that has only core modules. Thus, it packs all non-core modules
+required by the script.
 
 
 =head1 TODO/ISSUES
@@ -42,5 +47,19 @@ packs all non-core modules required by the script.
 Perhaps alternatively use L<Perl::PrereqScanner> or something like?
 
 =item * Hasn't handled the case of modules that are core in an earlier version of perl but become non-core in a later version
+
+=back
+
+
+=head1 SEE ALSO
+
+L<App::FatPacker>
+
+For producing free-standing Perl scripts/applications, there are other
+alternatives like L<PAR::Packer> (can also pack XS modules and compress the
+included files in a special archive, but with higher startup time and temporary
+directory to extract stuffs).
+
+L<Perl::Stripper>
 
 =back
