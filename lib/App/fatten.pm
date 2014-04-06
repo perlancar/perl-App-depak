@@ -273,9 +273,9 @@ _
             description => <<'_',
 
 Since fatpack uses `perl -c`, it might miss a few modules. You can add more
-modules manually via `include_modules` or let Perl::PrereqScanner does a static
-analysis of script/module source code. This on the other hand is usually too
-aggressive, as it will include modules in cases like this:
+modules manually via `include_modules` (or `use`) or let Perl::PrereqScanner
+does a static analysis of script/module source code. This on the other hand is
+usually too aggressive, as it will include modules in cases like this:
 
     if ($some_feature_or_os) {
         require Win32::Console::ANSI;
