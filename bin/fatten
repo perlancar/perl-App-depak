@@ -15,7 +15,7 @@ Perinci::CmdLine->new(url => '/App/fatten/fatten')->run;
 
 =head1 SYNOPSIS
 
- # by default includes all non-core modules and outputs to <INPUT>.packed
+ # by default outputs to <INPUT>.packed
  % fatten bin/script.pl
 
  # some options (set target perl version, output, debug)
@@ -29,28 +29,22 @@ Perinci::CmdLine->new(url => '/App/fatten/fatten')->run;
 
 B<fatten> uses L<App::FatPacker> to package a Perl script with its dependencies.
 B<fatten> simplifies the packing process, adds some nice defaults and options
-(like C<--strip>). It has the same limitation as App::FatPacker's, in that
-currently it only pack .pm Perl module files and not XS modules or other extra
-stuffs like shared files, message catalogs (C<.mo>), etc.
-
-By default it aims to produce a packed script that can run on a stock Perl
-installation that has only core modules. Thus, it packs all non-core modules
-required by the script. However, since it doesn't handle XS modules, in many
-cases this goal is not reachable, e.g. popularly-used modules like
-L<List::MoreUtils> is XS. If you want to create an installer or bootstrap script
-that can only rely on core modules, you have to select modules you use
-carefully.
+(like C<--strip> to strip module source files using L<Perl::Stipper>, or
+C<--use-prereq-scanner> instead of C<fatpack trace>). It has the same limitation
+as App::FatPacker's, in that currently it only pack .pm Perl module files and
+not XS modules or other extra stuffs like shared files, message catalogs
+(C<.mo>), etc.
 
 
 =head1 TODO/ISSUES
 
 =over
 
-=item * 'fatpack trace' doesn't give minimum version of required modules
-
-Perhaps alternatively use L<Perl::PrereqScanner> or something like?
+=item * Has not checked minimum version of modules (if using Perl::PrereqScanner)
 
 =item * Hasn't handled the case of modules that are core in an earlier version of perl but become non-core in a later version
+
+=item * Cache Perl::PrereqScanner result
 
 =back
 

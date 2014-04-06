@@ -13,7 +13,7 @@ use File::chdir;
 use File::Copy;
 use File::Path qw(make_path remove_tree);
 use File::Slurp::Shortcuts qw(slurp slurp_c write_file);
-use File::Temp qw(tempdir);
+use File::Temp qw(tempfile tempdir);
 use List::Util qw(first);
 use Log::Any::For::Builtins qw(system my_qx);
 use Module::CoreList;
@@ -41,6 +41,11 @@ sub _consider_module {
     if ($self->{skip_not_found} && !module_path($mod)) {
         $sm->{$mod} = 0;
         $log->warn("  Skipped: $mod (not found)");
+        return 0;
+    }
+    if ($mod !~ /\.pm\z/) {
+        $sm->{$mod} = 0;
+        $log->warn("  Skipped: $mod (not .pm file)");
         return 0;
     }
     if ($mod ~~ @{ $self->{exclude_modules} }) {
@@ -72,56 +77,61 @@ sub _consider_module {
     1;
 }
 
-sub _trace_with_fatpack {
-    my $self = shift;
+sub _trace_with_fatpack_trace {
+    my ($self, $path) = @_;
+
+    $self->{_seen_paths} //= {};
+    return if $self->{_seen_paths}{$path}++;
+
+    $log->debug("  Analyzing $path with 'fatpack trace' ...");
 
     my $tempdir = $self->{tempdir};
 
-    my @new;
-    for my $mod (@{ $self->{include_modules} }) {
-        push @new, $mod if $self->_consider_module($mod);
-    }
-
-    my $tracef = "$tempdir/fatpacker.trace";
-    system("fatpack", "trace", "--to", $tracef, $self->{abs_input_file});
+    my ($tracefh, $tracef) = tempfile("fatpack.trace.XXXXXX", DIR=>$tempdir);
+    system("fatpack", "trace", "--to", $tracef,
+           (map {("--use", $_)} @{ $self->{use} // [] }), $path);
     die "Can't fatpack trace: ".explain_child_error() if $?;
 
     # i'm not having much success using the 'fatpack packlists-for' and 'fatpack
     # tree' commands. so i'm adding the .pm files directly here for now, and
     # later finally using 'fatpack file'.
 
+    my @new_mods;
+
     open my($fh), "<", $tracef or die "Can't open $tracef: $!";
     while (my $mod = <$fh>) {
         chomp($mod);
-        push @new, $mod if $self->_consider_module($mod);
+        push @new_mods, $mod if $self->_consider_module($mod);
     }
 
-    if ($self->{use_prereq_scanner}) {
-        $self->_trace_with_prereq_scanner($_) for sort @new;
-    }
+    #my @paths = grep {$_} map { module_path($_) } sort @new_mods;
+    #$self->_trace_with_fatpack_trace($_) for @paths;
 }
 
 sub _trace_with_prereq_scanner {
-    my ($self, $mod) = @_;
+    my ($self, $path) = @_;
 
-    $log->debug("  Analyzing $mod with PrereqScanner ...");
+    $self->{_seen_paths} //= {};
+    return if $self->{_seen_paths}{$path}++;
+
+    $log->debug("  Analyzing $path with PrereqScanner ...");
 
     state $scanner = do {
         require Perl::PrereqScanner;
         Perl::PrereqScanner->new;
     };
 
-    my @new;
-    my $res = $scanner->scan_module($mod)->as_string_hash;
+    my @new_mods;
+    my $res = $scanner->scan_file($path)->as_string_hash;
     for my $m0 (keys %$res) {
         next if $m0 =~ /\A(perl)\z/;
 
         my $m = $m0; $m =~ s!::!/!g; $m .= ".pm";
-        push @new, $m if $self->_consider_module($m);
+        push @new_mods, $m if $self->_consider_module($m);
     }
 
-    # proceed recursively
-    $self->_trace_with_prereq_scanner($_) for sort @new;
+    my @paths = grep {$_} map { module_path($_) } @new_mods;
+    $self->_trace_with_prereq_scanner($_) for @paths;
 }
 
 sub _build_lib {
@@ -239,9 +249,27 @@ _
         #    schema => [bool => default => 0],
         #    summary => 'Whether to overwrite output if previously exists',
         #},
+        use_fatpack_trace => {
+            summary => "Whether to use 'fatpack trace' to detect required modules",
+            schema => ['bool', default=>1],
+            description => <<'_',
+
+`fatpack trace` uses `perl -c`.
+
+_
+        },
+        use => {
+            summary => 'Additional modules to "use"',
+            schema => ['array*' => of => 'str*'],
+            description => <<'_',
+
+Will be passed to `fatpack trace`'s `--use` option.
+
+_
+        },
         use_prereq_scanner => {
             summary => 'Whether to use Perl::PrereqScanner to detect required modules',
-            schema => ['bool', default=>1],
+            schema => ['bool', default=>0],
             description => <<'_',
 
 Since fatpack uses `perl -c`, it might miss a few modules. You can add more
@@ -327,7 +355,25 @@ sub fatten {
     $self->{seen_mods} = {};
 
     $log->infof("Tracing modules to be included ...");
-    $self->_trace_with_fatpack;
+
+    my @new;
+    for my $mod (@{ $self->{include_modules} }) {
+        push @new, $mod if $self->_consider_module($mod);
+    }
+    if ($self->{use_fatpack_trace}) {
+        my @paths = (
+            $self->{abs_input_file},
+            #(grep {$_} map {module_path($_)} sort @new),
+        );
+        $self->_trace_with_fatpack_trace($_) for @paths;
+    }
+    if ($self->{use_prereq_scanner}) {
+        my @paths = (
+            $self->{abs_input_file},
+            (grep {$_} map {module_path($_)} sort @new),
+        );
+        $self->_trace_with_prereq_scanner($_) for @paths;
+    }
 
     $log->infof("Building lib/ ...");
     $self->_build_lib;
