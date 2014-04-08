@@ -7,7 +7,6 @@ use experimental 'smartmatch';
 use Log::Any '$log';
 BEGIN { no warnings; $main::Log_Level = 'info' }
 
-use Config;
 use Cwd qw(abs_path);
 use File::chdir;
 use File::Copy;
