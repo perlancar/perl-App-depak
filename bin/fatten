@@ -29,7 +29,7 @@ Perinci::CmdLine->new(url => '/App/fatten/fatten')->run;
 
 B<fatten> uses L<App::FatPacker> to package a Perl script with its dependencies.
 B<fatten> simplifies the packing process, adds some nice defaults and options
-(like C<--strip> to strip module source files using L<Perl::Stipper>, or
+(like C<--strip> to strip module source files using L<Perl::Stripper>, or
 C<--use-prereq-scanner> instead of C<fatpack trace>). It has the same limitation
 as App::FatPacker's, in that currently it only pack .pm Perl module files and
 not XS modules or other extra stuffs like shared files, message catalogs
@@ -59,4 +59,3 @@ included files in a special archive, but with higher startup time and temporary
 directory to extract stuffs).
 
 L<Perl::Stripper>
-
