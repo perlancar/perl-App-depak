@@ -14,10 +14,11 @@ use File::Copy;
 use File::Path qw(make_path remove_tree);
 use File::Slurp::Shortcuts qw(slurp slurp_c write_file);
 use File::Temp qw(tempfile tempdir);
+use List::MoreUtils qw(uniq);
 use List::Util qw(first);
 use Log::Any::For::Builtins qw(system my_qx);
 use Module::Path qw(module_path);
-#use SHARYANTO::Dist::Util qw(packlist_for);
+use SHARYANTO::Dist::Util qw(list_dist_modules);
 use SHARYANTO::Proc::ChildError qw(explain_child_error);
 use String::ShellQuote;
 use version;
@@ -62,6 +63,17 @@ sub _build_lib {
     push @mods, (map {$_->{module}} grep {!$_->{is_core} && !$_->{is_xs}} @$deps);
 
     push @mods, @{ $self->{include} // [] };
+
+    for (@{ $self->{include_dist} // [] }) {
+        my @distmods = list_dist_modules($_);
+        if (@distmods) {
+            push @mods, @distmods;
+        } else {
+            push @mods, $_;
+        }
+    }
+
+    @mods = uniq(@mods);
 
     # filter excluded
     my @fmods;
@@ -149,7 +161,7 @@ $SPEC{fatten} = {
             pos => 1,
         },
         include => {
-            summary => 'Modules to include',
+            summary => 'Include extra modules',
             description => <<'_',
 
 When the tracing process fails to include a required module, you can add it
@@ -158,6 +170,18 @@ here.
 _
             schema => ['array*' => of => 'str*'],
             cmdline_aliases => { I => {} },
+        },
+        include_dist => {
+            summary => 'Include extra modules',
+            description => <<'_',
+
+Just like the `include` option, but will include module as well as other modules
+from the same distribution. Module name must be the main module of the
+distribution. Will determine other modules from the `.packlist` file.
+
+_
+            schema => ['array*' => of => 'str*'],
+            cmdline_aliases => {},
         },
         exclude => {
             summary => 'Modules to exclude',
@@ -269,8 +293,6 @@ This distribution provides command-line utility called L<fatten>.
 =head2 TODO
 
 =over
-
-=item * Option to include files from .packlist instead of just .pm files.
 
 =back
 
