@@ -38,7 +38,7 @@ Currently B<fatten> ignores C<fatlib/> and XS modules. It only focuses on
 creating free-standing Perl script which depends on pure-Perl modules (C<.pm>
 files) only. Including C<fatlib/> to a stand-alone script will require an
 approach like L<PAR::Archive> (i.e. bundling the required files in an archive
-and extracting the required files on the temporary directory).
+and extracting the required files into a temporary directory).
 
 By default B<fatten> skips core modules.
 
