@@ -15,11 +15,11 @@ Perinci::CmdLine->new(url => '/App/fatten/fatten')->run;
 
 =head1 SYNOPSIS
 
- # by default outputs to <INPUT>.packed
+ # by default outputs to 'packed' in the current directory
  % fatten bin/script.pl
 
- # some options (set target perl version, output, debug)
- % fatten --perl-version v5.10.1 -o /tmp/script.pl --debug bin/script.pl
+ # some options (set debug, set target perl version, add some modules, set output)
+ % fatten --debug -V 5.10.1 --include Foo::Bar --include Baz script.pl script.pl.packed
 
  # see more options
  % fatten --help
