@@ -32,6 +32,7 @@ our %SPEC;
 sub _trace {
     my $self = shift;
 
+    $log->debugf("  Tracing with method '%s' ...", $self->{trace_method});
     my $res = App::tracepm::tracepm(
         method => $self->{trace_method},
         script => $self->{input_file},
