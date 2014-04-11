@@ -19,7 +19,7 @@ Perinci::CmdLine->new(url => '/App/fatten/fatten')->run;
  % fatten bin/script.pl
 
  # some options (set debug, set target perl version, add some modules, set output)
- % fatten --debug -V 5.10.1 --include Foo::Bar --include Baz script.pl script.pl.packed
+ % fatten --debug -V 5.10.1 -I Foo::Bar -I Baz script.pl script.pl.packed
 
  # see more options
  % fatten --help
