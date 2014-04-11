@@ -265,4 +265,13 @@ sub fatten {
 
 This distribution provides command-line utility called L<fatten>.
 
+
+=head2 TODO
+
+=over
+
+=item * Option to include files from .packlist instead of just .pm files.
+
+=back
+
 =cut
