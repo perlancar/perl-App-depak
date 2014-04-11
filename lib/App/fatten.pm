@@ -115,12 +115,12 @@ sub _build_lib {
                 require Perl::Stripper;
                 Perl::Stripper->new;
             };
-            $log->debug("  Stripping $mpath --> $mod ...");
+            $log->debug("  Stripping $mpath --> $modp ...");
             my $src = slurp($mpath);
             my $stripped = $stripper->strip($src);
             write_file($modp, $stripped);
         } else {
-            $log->debug("  Copying $mpath --> $mod ...");
+            $log->debug("  Copying $mpath --> $modp ...");
             copy($mpath, $modp);
         }
 
