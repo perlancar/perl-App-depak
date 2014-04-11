@@ -98,7 +98,7 @@ sub _build_lib {
             $log->debug("  Stripping $mpath --> $mod ...");
             my $src = slurp($mpath);
             my $stripped = $stripper->strip($src);
-            write_file($mod, $stripped);
+            write_file($modp, $stripped);
         } else {
             $log->debug("  Copying $mpath --> $mod ...");
             copy($mpath, $modp);
