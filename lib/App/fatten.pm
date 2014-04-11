@@ -146,6 +146,7 @@ $SPEC{fatten} = {
             summary => 'Path to output file, defaults to `packed` in current directory',
             schema => ['str*'],
             cmdline_aliases => { o=>{} },
+            pos => 1,
         },
         include => {
             summary => 'Modules to include',
