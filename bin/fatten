@@ -27,24 +27,33 @@ Perinci::CmdLine->new(url => '/App/fatten/fatten')->run;
 
 =head1 DESCRIPTION
 
-B<fatten> uses L<App::FatPacker> to package a Perl script with its dependencies.
-B<fatten> simplifies the packing process, adds some nice defaults and options
-(like C<--strip> to strip module source files using L<Perl::Stripper>, or
-C<--use-prereq-scanner> instead of C<fatpack trace>). It has the same limitation
-as App::FatPacker's, in that currently it only pack .pm Perl module files and
-not XS modules or other extra stuffs like shared files, message catalogs
-(C<.mo>), etc.
-
-
-=head1 TODO/ISSUES
+B<fatten> is an alternative command-line script for L<App::FatPacker>.
+Differences with the B<fatpack> script that comes with App::FatPacker:
 
 =over
 
-=item * Has not checked minimum version of modules (if using Perl::PrereqScanner)
+=item * A simpler interface and some nice defaults
 
-=item * Hasn't handled the case of modules that are core in an earlier version of perl but become non-core in a later version
+Currently B<fatten> ignores C<fatlib/> and XS modules. It only focuses on
+creating free-standing Perl script which depends on pure-Perl modules (C<.pm>
+files) only. Including C<fatlib/> to a stand-alone script will require an
+approach like L<PAR::Archive> (i.e. bundling the required files in an archive
+and extracting the required files on the temporary directory).
 
-=item * Cache Perl::PrereqScanner result
+By default B<fatten> skips core modules.
+
+B<fatpack> sometimes fails to include some modules because it can't find the
+C<.packlist> said modules. B<fatten> goes ahead and tries the next best thing
+which is to copy just the C<.pm> files.
+
+=item * Alternative methods to trace script's dependencies
+
+Aside from the default `fatpack trace` method, it can also use
+L<Perl::PrereqScanner> and others. See L<App::tracepm> for more details.
+
+=item * Some extra options
+
+Like an option to strip the modules with L<Perl::Stripper>.
 
 =back
 
