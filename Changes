@@ -14,6 +14,9 @@ Revision history for App-fatten
           --exclude-module-patterns -> --exclude-pattern; add --method; remove
           --use-{prereq-scanner,fatpack-trace}, --skip-not-found.
 
+        - Change default value for --output-file. By default it now outputs to
+          file `packed` in the current directory instead of <input_file>.packed.
+
 
 0.01    2014-04-07 (SHARYANTO)
 
