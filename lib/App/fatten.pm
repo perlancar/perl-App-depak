@@ -60,15 +60,23 @@ sub _build_lib {
     my @mods; # modules to add
 
     my $deps = $self->{deps};
-    push @mods, (map {$_->{module}} grep {!$_->{is_core} && !$_->{is_xs}} @$deps);
+    for (map {$_->{module}} grep {!$_->{is_core} && !$_->{is_xs}} @$deps) {
+        $log->debugf("  Adding module: %s (traced)", $_);
+        push @mods, $_;
+    }
 
-    push @mods, @{ $self->{include} // [] };
+    for (@{ $self->{include} // [] }) {
+        $log->debugf("  Adding module: %s (included)", $_);
+        push @mods, $_;
+    }
 
     for (@{ $self->{include_dist} // [] }) {
         my @distmods = list_dist_modules($_);
         if (@distmods) {
+            $log->debugf("  Adding modules: %s (included dist)", join(", ", @distmods));
             push @mods, @distmods;
         } else {
+            $log->debugf("  Adding module: %s (included dist, but can't find other modules)", $_);
             push @mods, $_;
         }
     }
