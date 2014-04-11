@@ -1,5 +1,12 @@
 Revision history for App-fatten
 
+0.03    2014-04-11 (SHARYANTO)
+
+        - [Bug fix] Forgot to update stripping target filename.
+
+        - You can now specify output path using the second positional argument.
+
+
 0.02    2014-04-11 (SHARYANTO)
 
         [ENHANCEMENTS]
