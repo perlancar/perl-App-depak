@@ -246,6 +246,10 @@ _
             cmdline_aliases => { s=>{} },
         },
         # XXX strip_opts
+        debug_keep_tempdir => {
+            summary => 'Keep temporary directory for debugging',
+            schema => ['bool' => default=>0],
+        },
     },
     deps => {
         exec => 'fatpack',
@@ -255,7 +259,7 @@ sub fatten {
     my %args = @_;
     my $self = __PACKAGE__->new(%args);
 
-    my $tempdir = tempdir(CLEANUP => 1);
+    my $tempdir = tempdir(CLEANUP => 0);
     $log->debugf("Created tempdir %s", $tempdir);
     $self->{tempdir} = $tempdir;
 
@@ -284,6 +288,13 @@ sub fatten {
 
     $log->infof("Packing ...");
     $self->_pack;
+
+    if ($self->{debug_keep_tempdir}) {
+        $log->infof("Keeping tempdir %s for debugging", $tempdir);
+    } else {
+        $log->debugf("Deleting tempdir %s ...", $tempdir);
+        remove_tree($tempdir);
+    }
 
     [200];
 }
