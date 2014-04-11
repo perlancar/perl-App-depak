@@ -1,5 +1,20 @@
 Revision history for App-fatten
 
+0.02    2014-04-11 (SHARYANTO)
+
+        [ENHANCEMENTS]
+
+        - Use App::tracepm to trace dependencies, to remove duplicated code.
+          Plus we get extra tracing methods.
+
+        [INCOMPATIBLE CHANGES]
+
+        - Add/rename/delete some command-line options: rename --include-modules
+          -> --include, --exclude-modules -> --exclude,
+          --exclude-module-patterns -> --exclude-pattern; add --method; remove
+          --use-{prereq-scanner,fatpack-trace}, --skip-not-found.
+
+
 0.01    2014-04-07 (SHARYANTO)
 
         - First release.
