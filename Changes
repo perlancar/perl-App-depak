@@ -1,8 +1,17 @@
 Revision history for App-fatten
 
+0.05    2014-04-12 (SHARYANTO)
+
+        - Add option: --noexclude-code.
+
+        - Add option: --debug-keep-tempdir.
+
+        - Add short option -t for --trace-method.
+
+
 0.04    2014-04-11 (SHARYANTO)
 
-        - Add option: include_dist.
+        - Add option: --include-dist.
 
 
 0.03    2014-04-11 (SHARYANTO)
@@ -22,9 +31,9 @@ Revision history for App-fatten
         [INCOMPATIBLE CHANGES]
 
         - Add/rename/delete some command-line options: rename --include-modules
-        -> --include, --exclude-modules -> --exclude, --exclude-module-patterns
-        -> --exclude-pattern; add --trace-method; remove
-        --use-{prereq-scanner,fatpack-trace}, --skip-not-found.
+          --include, --exclude-modules -> --exclude, --exclude-module-patterns
+          --exclude-pattern; add --trace-method; remove
+          --use-{prereq-scanner,fatpack-trace}, --skip-not-found.
 
         - Change default value for --output-file. By default it now outputs to
           file `packed` in the current directory instead of <input_file>.packed.
