@@ -230,6 +230,7 @@ The default is `fatpacker`, which is the same as what `fatpack trace` does.
 There are other methods available, please see `App::tracepm` for more details.
 
 _
+            cmdline_aliases => { t=>{} },
         },
         use => {
             summary => 'Additional modules to "use"',
