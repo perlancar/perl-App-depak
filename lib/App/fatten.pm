@@ -37,11 +37,11 @@ sub _trace {
         method => $self->{trace_method},
         script => $self->{input_file},
         use => $self->{use},
-        recurse_exclude_core => 1,
+        recurse_exclude_core => $self->{exclude_core} ? 1:0,
         recurse_exclude_xs   => 1,
         detail => 1,
 
-        core => 0,
+        core => $self->{exclude_core} ? 0 : undef,
         xs   => 0,
     );
     die "Can't trace: $res->[0] - $res->[1]" unless $res->[0] == 200;
@@ -61,9 +61,11 @@ sub _build_lib {
     my @mods; # modules to add
 
     my $deps = $self->{deps};
-    for (map {$_->{module}} grep {!$_->{is_core} && !$_->{is_xs}} @$deps) {
-        $log->debugf("  Adding module: %s (traced)", $_);
-        push @mods, $_;
+    for (@$deps) {
+        next if $_->{is_core} && $self->{exclude_core};
+        next if $_->{is_xs};
+        $log->debugf("  Adding module: %s (traced)", $_->{module});
+        push @mods, $_->{module};
     }
 
     for (@{ $self->{include} // [] }) {
@@ -211,6 +213,10 @@ When you don't want to include a pattern of modules, specify it here.
 _
             schema => ['array*' => of => 'str*'],
             cmdline_aliases => { p => {} },
+        },
+        exclude_core => {
+            summary => 'Whether to exclude core modules',
+            schema => ['bool' => default => 1],
         },
         perl_version => {
             summary => 'Perl version to target, defaults to current running version',
