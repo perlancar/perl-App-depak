@@ -18,8 +18,8 @@ use List::MoreUtils qw(uniq);
 use List::Util qw(first);
 use Log::Any::For::Builtins qw(system my_qx);
 use Module::Path qw(module_path);
+use Proc::ChildError qw(explain_child_error);
 use SHARYANTO::Dist::Util qw(list_dist_modules);
-use SHARYANTO::Proc::ChildError qw(explain_child_error);
 use String::ShellQuote;
 use version;
 
