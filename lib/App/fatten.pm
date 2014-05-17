@@ -12,7 +12,7 @@ use Cwd qw(abs_path);
 use File::chdir;
 use File::Copy;
 use File::Path qw(make_path remove_tree);
-use File::Slurp::Shortcuts qw(slurp slurp_c write_file);
+use File::Slurp::Tiny qw(write_file);
 use File::Temp qw(tempfile tempdir);
 use List::MoreUtils qw(uniq);
 use List::Util qw(first);
@@ -119,7 +119,7 @@ sub _build_lib {
                 Perl::Stripper->new;
             };
             $log->debug("  Stripping $mpath --> $modp ...");
-            my $src = slurp($mpath);
+            my $src = read_file($mpath);
             my $stripped = $stripper->strip($src);
             write_file($modp, $stripped);
         } else {
