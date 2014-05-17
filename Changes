@@ -1,5 +1,12 @@
 Revision history for App-fatten
 
+0.06    2014-05-17 (SHARYANTO)
+
+        - No functional changes.
+
+	- Replace File::Slurp with File::Slurp::Tiny.
+
+
 0.05    2014-04-12 (SHARYANTO)
 
         - Add option: --noexclude-code.
