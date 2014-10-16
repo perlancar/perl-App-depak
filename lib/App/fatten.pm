@@ -152,6 +152,14 @@ sub _pack {
 
     chmod 0755, $self->{abs_output_file};
 
+    # replace shebang line (which contains perl path used by fatpack) with a
+    # default system perl. perhaps make this configurable in the future.
+    {
+        my $ct = read_file($self->{abs_output_file});
+        $ct =~ s{\A#!(.+)}{#!/usr/bin/perl};
+        write_file($self->{abs_output_file}, $ct);
+    }
+
     $log->infof("  Produced %s (%.1f KB)",
                 $self->{abs_output_file}, (-s $self->{abs_output_file})/1024);
 }
