@@ -1,5 +1,13 @@
 Revision history for App-fatten
 
+0.08    2014-10-16 (PERLANCAR)
+
+        - [Bugfix] Add missing import read_file from File::Slurp Tiny (thanks
+          Paul Fenwick).
+
+        - [Doc] Write more explanation about how fatten differs from fatpack.
+
+
 0.07    2014-07-02 (SHARYANTO)
 
         - No functional changes.
