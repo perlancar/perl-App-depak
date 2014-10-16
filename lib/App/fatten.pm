@@ -221,6 +221,13 @@ _
         },
         perl_version => {
             summary => 'Perl version to target, defaults to current running version',
+            description => <<'_',
+
+This is for determining which modules are considered core and should be skipped
+by default (when `exclude_core` option is enabled). Different perl versions have
+different sets of core modules as well as different versions of the modules.
+
+_
             schema => ['str*'],
             cmdline_aliases => { V=>{} },
         },
@@ -234,7 +241,9 @@ _
             description => <<'_',
 
 The default is `fatpacker`, which is the same as what `fatpack trace` does.
-There are other methods available, please see `App::tracepm` for more details.
+Different tracing methods have different pro's and con's, one method might
+detect required modules that another method does not, and vice versa. There are
+several methods available, please see `App::tracepm` for more details.
 
 _
             cmdline_aliases => { t=>{} },
