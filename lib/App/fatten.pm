@@ -148,6 +148,9 @@ sub _pack {
         _sq($self->{abs_output_file}),
     );
     die "Can't fatpack file: ".explain_child_error() if $?;
+
+    chmod 0755, $self->{abs_output_file};
+
     $log->infof("  Produced %s (%.1f KB)",
                 $self->{abs_output_file}, (-s $self->{abs_output_file})/1024);
 }
