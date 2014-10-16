@@ -24,6 +24,7 @@ use Log::Any::For::Builtins qw(system my_qx);
 use Module::Path qw(module_path);
 use Proc::ChildError qw(explain_child_error);
 use SHARYANTO::Dist::Util qw(list_dist_modules);
+use SHARYANTO::File::Util qw(file_exists);
 use String::ShellQuote;
 use version;
 
@@ -241,10 +242,10 @@ _
             schema => ['str*'],
             cmdline_aliases => { V=>{} },
         },
-        #overwrite => {
-        #    schema => [bool => default => 0],
-        #    summary => 'Whether to overwrite output if previously exists',
-        #},
+        overwrite => {
+            schema => [bool => default => 0],
+            summary => 'Whether to overwrite output if previously exists',
+        },
         trace_method => {
             summary => "Which method to use to trace dependencies",
             schema => ['str*', default => 'fatpacker'],
@@ -309,6 +310,8 @@ sub fatten {
     {
         $output_file = $self->{output_file};
         if (defined $output_file) {
+            return [412, "Output file '$output_file' exists, won't overwrite (see --overwrite)"]
+                if file_exists($output_file) && !$self->{overwrite};
             last if open my($fh), ">", $output_file;
             return [500, "Can't write to output file '$output_file': $!"];
         }
@@ -318,10 +321,14 @@ sub fatten {
 
         # try <input>.fatpack in the source directory
         $output_file = File::Spec->catpath($vol, $dir, "$file.fatpack");
+        return [412, "Output file '$output_file' exists, won't overwrite (see --overwrite)"]
+            if file_exists($output_file) && !$self->{overwrite};
         last if open $fh, ">", $output_file;
 
         # if failed, try <input>.fatpack in the current directory
         $output_file = "$CWD/$file.fatpack";
+        return [412, "Output file '$output_file' exists, won't overwrite (see --overwrite)"]
+            if file_exists($output_file) && !$self->{overwrite};
         last if open $fh, ">", $output_file;
 
         # failed too, bail
