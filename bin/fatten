@@ -104,7 +104,7 @@ C<parse-id-phone>. Or you can select a profile explicitly using
 C<--config-profile> option.
 
 The config parameters are command-line options. The short aliases are not
-recognized, use long names. Dashes (C<->)) becomes underscores (C<_>). See
+recognized, use long names. Dashes (C<->) becomes underscores (C<_>). See
 L<App::fatten> for known options/parameters.
 
 
