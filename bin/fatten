@@ -30,6 +30,9 @@ Perinci::CmdLine::fatten->new(url => '/App/fatten/fatten')->run;
 
 =head1 DESCRIPTION
 
+ "Thank you for a freakin awesome app. Seriously, fatten is great! <3"
+ -- Paul J. Fenwick
+
 B<fatten> is an alternative command-line script for L<App::FatPacker>. I had a
 few problems when using the B<fatpack> script which comes with
 C<App::FatPacker>, namely: 1) using B<fatpack> to produce a fatpacked-script is
