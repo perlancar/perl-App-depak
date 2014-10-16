@@ -1,5 +1,24 @@
 Revision history for App-fatten
 
+0.09    2014-10-16 (PERLANCAR)
+
+        - This release adds several conveniences turnkey fatpacking.
+
+        - [Incompatible change] Change default of output_file to
+          <source_dir>/<source>.fatpack, or <cwd>/<source>.fatpack if the first
+          choice is not writable.
+
+        - Add option --overwrite.
+
+        - chmod 0755 output file.
+
+        - Replace shebang line in output file to the standard "#!/usr/bin/perl"
+          (instead of using the path to perl binary used by fatpack).
+
+        - Document configuration file support, and automatically select a config
+          profile which the same name as the input script for convenience.
+
+
 0.08    2014-10-16 (PERLANCAR)
 
         - [Bugfix] Add missing import read_file from File::Slurp Tiny (thanks
