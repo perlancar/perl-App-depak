@@ -1,5 +1,8 @@
 package App::fatten;
 
+# DATE
+# VERSION
+
 use 5.010001;
 use strict;
 use warnings;
@@ -24,8 +27,6 @@ use String::ShellQuote;
 use version;
 
 sub _sq { shell_quote($_[0]) }
-
-# VERSION
 
 our %SPEC;
 
