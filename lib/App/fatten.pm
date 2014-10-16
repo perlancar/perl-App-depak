@@ -15,7 +15,7 @@ use Cwd qw(abs_path);
 use File::chdir;
 use File::Copy;
 use File::Path qw(make_path remove_tree);
-use File::Slurp::Tiny qw(write_file);
+use File::Slurp::Tiny qw(write_file read_file);
 use File::Temp qw(tempfile tempdir);
 use List::MoreUtils qw(uniq);
 use List::Util qw(first);
