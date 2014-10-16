@@ -27,12 +27,21 @@ Perinci::CmdLine->new(url => '/App/fatten/fatten')->run;
 
 =head1 DESCRIPTION
 
-B<fatten> is an alternative command-line script for L<App::FatPacker>.
-Differences with the B<fatpack> script that comes with App::FatPacker:
+B<fatten> is an alternative command-line script for L<App::FatPacker>. I had a
+few problems when using the B<fatpack> script which comes with
+C<App::FatPacker>, namely: 1) using B<fatpack> to produce a fatpacked-script is
+a multistep process and I always forget the steps; 2) some modules that ought to
+be included are often not included; 3) I can't exclude some modules that I don't
+want to include, e.g. Perl core modules which should always already be
+available.
+
+Thus, here are the differences of B<fatten> compared to B<fatpack>:
 
 =over
 
 =item * A simpler interface and some nice defaults
+
+Using B<fatten>, you only need a single step to produce the final result.
 
 Currently B<fatten> ignores C<fatlib/> and XS modules. It only focuses on
 creating free-standing Perl script which depends on pure-Perl modules (C<.pm>
@@ -40,16 +49,26 @@ files) only. Including C<fatlib/> to a stand-alone script will require an
 approach like L<PAR::Archive> (i.e. bundling the required files in an archive
 and extracting the required files into a temporary directory).
 
-By default B<fatten> skips core modules.
+By default B<fatten> skips Perl core modules. This results in a smaller product.
 
 B<fatpack> sometimes fails to include some modules because it can't find the
-C<.packlist> said modules. B<fatten> goes ahead and tries the next best thing
-which is to copy just the C<.pm> files.
+C<.packlist> for said modules. B<fatten> goes ahead and tries the next best
+thing which is to copy just the C<.pm> files.
 
 =item * Alternative methods to trace script's dependencies
 
-Aside from the default `fatpack trace` method, it can also use
-L<Perl::PrereqScanner> and others. See L<App::tracepm> for more details.
+There are various methods of tracing a script's dependencies, each with their
+own pro's and con's. B<fatpack> checks C<%INC> in the C<CHECK> phase, and this
+misses modules loaded during run-time using C<require>. Other methods include:
+trapping C<require> (but this can also miss modules loaded conditionally
+depending on execution path), static analysis using L<Perl::PrereqScanner> (this
+can also miss some modules loaded in unusual ways).
+
+B<fatten> uses L<App::tracepm>, which provides various methods of tracing. See
+App::tracepm documentation for more details.
+
+Of course, like B<fatpack>, you can also specify additional modules to include.
+And, unlike B<fatpack>, you can specify modules to exclude as well.
 
 =item * Some extra options
 
