@@ -15,6 +15,7 @@ use Cwd qw(abs_path);
 use File::chdir;
 use File::Copy;
 use File::Path qw(make_path remove_tree);
+use File::Spec;
 use File::Slurp::Tiny qw(write_file read_file);
 use File::Temp qw(tempfile tempdir);
 use List::MoreUtils qw(uniq);
@@ -160,14 +161,20 @@ $SPEC{fatten} = {
     v => 1.1,
     args => {
         input_file => {
-            summary => 'Path to input file (script to be packed)',
+            summary => 'Path to input file (script to be fatpacked)',
             schema => ['str*'],
             req => 1,
             pos => 0,
             cmdline_aliases => { i=>{} },
         },
         output_file => {
-            summary => 'Path to output file, defaults to `packed` in current directory',
+            summary => 'Path to output file, defaults to `<script>.fatpack` in source directory',
+            description => <<'_',
+
+If source directory happens to be unwritable by the script, will try
+`<script>.fatpack` in current directory. If that fails too, will die.
+
+_
             schema => ['str*'],
             cmdline_aliases => { o=>{} },
             pos => 1,
@@ -290,13 +297,37 @@ sub fatten {
     $self->{perl_version} = version->parse($self->{perl_version});
     $log->debugf("Will be targetting perl %s", $self->{perl_version});
 
-    (-f $self->{input_file}) or die "No such input file: $self->{input_file}";
-    $self->{abs_input_file} = abs_path($self->{input_file})
-        or die "Can't find absolute path of input file $self->{input_file}";
+    (-f $self->{input_file})
+        or return [500, "No such input file: $self->{input_file}"];
+    $self->{abs_input_file} = abs_path($self->{input_file}) or return
+        [500, "Can't find absolute path of input file $self->{input_file}"];
 
-    $self->{output_file} //= "$CWD/packed";
-    $self->{abs_output_file} = abs_path($self->{output_file})
-        or die "Can't find absolute path of output file $self->{output_file}";
+    my $output_file;
+    {
+        $output_file = $self->{output_file};
+        if (defined $output_file) {
+            last if open my($fh), ">", $output_file;
+            return [500, "Can't write to output file '$output_file': $!"];
+        }
+
+        my ($vol, $dir, $file) = File::Spec->splitpath($self->{input_file});
+        my $fh;
+
+        # try <input>.fatpack in the source directory
+        $output_file = File::Spec->catpath($vol, $dir, "$file.fatpack");
+        last if open $fh, ">", $output_file;
+
+        # if failed, try <input>.fatpack in the current directory
+        $output_file = "$CWD/$file.fatpack";
+        last if open $fh, ">", $output_file;
+
+        # failed too, bail
+        return [500, "Can't write $file.fatpack in source- as well as ".
+                    "current directory: $!"];
+    }
+    $self->{output_file} = $output_file;
+    $self->{abs_output_file} = abs_path($output_file) or return
+        [500, "Can't find absolute path of output file '$self->{output_file}'"];
 
     $log->infof("Tracing dependencies ...");
     $self->_trace;
