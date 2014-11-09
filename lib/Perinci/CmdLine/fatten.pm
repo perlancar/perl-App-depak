@@ -4,8 +4,7 @@ package Perinci::CmdLine::fatten;
 # VERSION
 
 use 5.010;
-use Moo;
-extends 'Perinci::CmdLine::Lite';
+use parent qw(Perinci::CmdLine::Lite);
 
 sub hook_before_read_config_file {
     my ($self, $r) = @_;
@@ -49,4 +48,3 @@ sub hook_before_read_config_file {
 
 This subclass sets default config_profile to the name of input script, for
 convenience.
-
