@@ -176,17 +176,27 @@ $SPEC{fatten} = {
     args => {
         input_file => {
             summary => 'Path to input file (script to be fatpacked)',
+            description => <<'_',
+
+`-` (or if unspecified) means to take from standard input (internally, a
+temporary file will be created to handle this).
+
+_
             schema => ['str*'],
-            req => 1,
+            default => '-',
             pos => 0,
             cmdline_aliases => { i=>{} },
         },
         output_file => {
-            summary => 'Path to output file, defaults to `<script>.fatpack` in source directory',
+            summary => 'Path to output file',
             description => <<'_',
 
-If source directory happens to be unwritable by the script, will try
-`<script>.fatpack` in current directory. If that fails too, will die.
+If input is from stdin, then output defaults to stdout. You can also specify
+stdout by using `-`.
+
+Otherwise, defaults to `<script>.fatpack` in source directory. If source
+directory happens to be unwritable by the script, will try `<script>.fatpack` in
+current directory. If that fails too, will die.
 
 _
             schema => ['str*'],
@@ -311,19 +321,33 @@ sub fatten {
     $self->{perl_version} = version->parse($self->{perl_version});
     $log->debugf("Will be targetting perl %s", $self->{perl_version});
 
-    (-f $self->{input_file})
-        or return [500, "No such input file: $self->{input_file}"];
-    $self->{abs_input_file} = abs_path($self->{input_file}) or return
-        [500, "Can't find absolute path of input file $self->{input_file}"];
+    if ($self->{input_file} eq '-') {
+        $self->{input_file_is_stdin} = 1;
+        $self->{input_file} = $self->{abs_input_file} = (tempfile())[1];
+        open my($fh), ">", $self->{abs_input_file}
+            or return [500, "Can't write temporary input file '$self->{abs_input_file}': $!"];
+        local $_; while (<STDIN>) { print $fh $_ }
+        $self->{output_file} //= '-';
+    } else {
+        (-f $self->{input_file})
+            or return [500, "No such input file: $self->{input_file}"];
+        $self->{abs_input_file} = abs_path($self->{input_file}) or return
+            [500, "Can't find absolute path of input file $self->{input_file}"];
+    }
 
     my $output_file;
     {
         $output_file = $self->{output_file};
         if (defined $output_file) {
-            return [412, "Output file '$output_file' exists, won't overwrite (see --overwrite)"]
-                if file_exists($output_file) && !$self->{overwrite};
-            last if open my($fh), ">", $output_file;
-            return [500, "Can't write to output file '$output_file': $!"];
+            if ($output_file eq '-') {
+                $self->{output_file_is_stdout} = 1;
+                $self->{output_file} = $self->{abs_output_file} = (tempfile())[1];
+            } else {
+                return [412, "Output file '$output_file' exists, won't overwrite (see --overwrite)"]
+                    if file_exists($output_file) && !$self->{overwrite};
+                last if open my($fh), ">", $output_file;
+                return [500, "Can't write to output file '$output_file': $!"];
+            }
         }
 
         my ($vol, $dir, $file) = File::Spec->splitpath($self->{input_file});
@@ -346,7 +370,7 @@ sub fatten {
                     "current directory: $!"];
     }
     $self->{output_file} = $output_file;
-    $self->{abs_output_file} = abs_path($output_file) or return
+    $self->{abs_output_file} //= abs_path($output_file) or return
         [500, "Can't find absolute path of output file '$self->{output_file}'"];
 
     $log->infof("Tracing dependencies ...");
@@ -363,6 +387,16 @@ sub fatten {
     } else {
         $log->debugf("Deleting tempdir %s ...", $tempdir);
         remove_tree($tempdir);
+    }
+
+    if ($self->{input_file_is_stdin}) {
+        unlink $self->{abs_input_file};
+    }
+    if ($self->{output_file_is_stdout}) {
+        open my($fh), "<", $self->{abs_output_file}
+            or return [500, "Can't open temporary output file '$self->{abs_output_file}': $!"];
+        local $_; print while <$fh>; close $fh;
+        unlink $self->{abs_output_file};
     }
 
     [200];
