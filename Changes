@@ -1,5 +1,11 @@
 Revision history for App-fatten
 
+0.12    2014-11-10 (PERLANCAR)
+
+	- Add stripping options: --strip-ws, --strip-comment, --strip-pod,
+	  --strip-maintain-linum.
+
+
 0.11    2014-11-09 (PERLANCAR)
 
 	- Support accepting script from stdin and outputing to stdout (using
