@@ -10,7 +10,6 @@ use experimental 'smartmatch';
 use Log::Any '$log';
 BEGIN { no warnings; $main::Log_Level = 'info' }
 
-use App::tracepm;
 use Cwd qw(abs_path);
 use File::chdir;
 use File::Copy;
@@ -33,6 +32,8 @@ sub _sq { shell_quote($_[0]) }
 our %SPEC;
 
 sub _trace {
+    require App::tracepm;
+
     my $self = shift;
 
     $log->debugf("  Tracing with method '%s' ...", $self->{trace_method});
