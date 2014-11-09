@@ -117,21 +117,33 @@ sub _build_lib {
             make_path($dir) unless -d $dir;
         }
 
-        if ($self->{strip}) {
+        if ($self->{stripper}) {
             my $stripper = do {
                 require Perl::Stripper;
                 Perl::Stripper->new(
-                    maintain_linum => 0,
-                    strip_ws       => $self->{strip_ws},
-                    strip_comment  => $self->{strip_comment},
-                    strip_pod      => $self->{strip_pod},
-                    strip_log      => $self->{strip_log},
+                    maintain_linum => $self->{stripper_maintain_linum},
+                    strip_ws       => $self->{stripper_ws},
+                    strip_comment  => $self->{stripper_comment},
+                    strip_pod      => $self->{stripper_pod},
+                    strip_log      => $self->{stripper_log},
                 );
             };
             $log->debug("  Stripping $mpath --> $modp ...");
             my $src = read_file($mpath);
             my $stripped = $stripper->strip($src);
             write_file($modp, $stripped);
+        } elsif ($self->{strip}) {
+            require Perl::Strip;
+            my $strip = Perl::Strip->new;
+            $log->debug("  Stripping $mpath --> $modp ...");
+            my $src = read_file($mpath);
+            my $stripped = $strip->strip($src);
+            write_file($modp, $stripped);
+        } elsif ($self->{squish}) {
+            $log->debug("  Squishing $mpath --> $modp ...");
+            require Perl::Squish;
+            my $squish = Perl::Squish->new;
+            $squish->file($mpath, $modp);
         } else {
             $log->debug("  Copying $mpath --> $modp ...");
             copy($mpath, $modp);
@@ -296,32 +308,41 @@ Will be passed to the tracer. Will currently only affect the `fatpacker` and
 _
         },
 
+        squish => {
+            summary => 'Whether to squish included modules using Perl::Squish',
+            schema => ['bool' => default=>0],
+        },
+
         strip => {
+            summary => 'Whether to strip included modules using Perl::Strip',
+            schema => ['bool' => default=>0],
+        },
+
+        stripper => {
             summary => 'Whether to strip included modules using Perl::Stripper',
             schema => ['bool' => default=>0],
-            cmdline_aliases => { s=>{} },
         },
-        strip_maintain_linum => {
+        stripper_maintain_linum => {
             summary => "Will be passed to Perl::Stripper's maintain_linum",
             schema => ['bool'],
             default => 0,
         },
-        strip_ws => {
+        stripper_ws => {
             summary => "Will be passed to Perl::Stripper's strip_ws",
             schema => ['bool'],
             default => 1,
         },
-        strip_comment => {
+        stripper_comment => {
             summary => "Will be passed to Perl::Stripper's strip_comment",
             schema => ['bool'],
             default => 1,
         },
-        strip_pod => {
+        stripper_pod => {
             summary => "Will be passed to Perl::Stripper's strip_pod",
             schema => ['bool'],
             default => 1,
         },
-        strip_log => {
+        stripper_log => {
             summary => "Will be passed to Perl::Stripper's strip_log",
             schema => ['bool'],
             default => 0,

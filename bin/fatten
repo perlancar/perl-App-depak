@@ -81,7 +81,9 @@ And, unlike B<fatpack>, you can specify modules to exclude as well.
 
 =item * Some extra options
 
-Like an option to strip the modules with L<Perl::Stripper>.
+Like an option to strip/squish the module source codes with L<Perl::Strip>
+(C<--strip>) or L<Perl::Stripper> (C<--stripper>) or L<Perl::Squish>
+(C<--squish>).
 
 =item * Configuration file support
 
