@@ -5,10 +5,7 @@ package Perinci::CmdLine::fatten;
 
 use 5.010;
 use Moo;
-extends 'Perinci::CmdLine';
-
-# we don't have our own color theme class
-sub color_theme_class_prefix { 'Perinci::CmdLine::ColorTheme' }
+extends 'Perinci::CmdLine::Lite';
 
 sub hook_before_read_config_file {
     my ($self, $r) = @_;
@@ -42,10 +39,11 @@ sub hook_before_read_config_file {
     require File::Spec;
     my ($vol, $dir, $name) = File::Spec->splitpath($input_file);
     $r->{config_profile} = $name;
+    $r->{ignore_missing_config_profile_section} = 1;
 }
 
 1;
-# ABSTRACT: Subclass of Perinci::CmdLine to set config_profile default
+# ABSTRACT: Subclass of Perinci::CmdLine::Lite to set config_profile default
 
 =head1 DESCRIPTION
 

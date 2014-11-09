@@ -171,6 +171,7 @@ sub new {
 
 $SPEC{fatten} = {
     v => 1.1,
+    summary => 'Pack your dependencies onto your script file',
     args => {
         input_file => {
             summary => 'Path to input file (script to be fatpacked)',

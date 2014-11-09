@@ -9,7 +9,10 @@ use warnings;
 
 use Perinci::CmdLine::fatten;
 
-Perinci::CmdLine::fatten->new(url => '/App/fatten/fatten')->run;
+Perinci::CmdLine::fatten->new(
+    log => 1,
+    url => '/App/fatten/fatten',
+)->run;
 
 #ABSTRACT: Pack your dependencies onto your script file
 #PODNAME: fatten
