@@ -1,5 +1,13 @@
 Revision history for App-fatten
 
+0.13    2014-11-10 (PERLANCAR)
+
+	- [Incompatible change] Rename --strip and --strip-* to --stripper and
+          --stripper-*.
+
+        - Add support for Perl::Squish (--squish).
+
+
 0.12    2014-11-10 (PERLANCAR)
 
 	- Add stripping options: --strip-ws, --strip-comment, --strip-pod,
