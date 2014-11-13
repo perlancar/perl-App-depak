@@ -1,5 +1,13 @@
 Revision history for App-fatten
 
+0.15    2014-11-13 (PERLANCAR)
+
+        [ENHANCEMENTS]
+
+        - Add --args to pass arguments to script when running script (ref:
+          https://www.simplicidade.org/notes/archives/2014/11/fat_scripts.html).
+
+
 0.14    2014-11-13 (PERLANCAR)
 
         - [Bugfix] forgot to add 'last' for properly setting default output
