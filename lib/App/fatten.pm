@@ -40,6 +40,7 @@ sub _trace {
     my $res = App::tracepm::tracepm(
         method => $self->{trace_method},
         script => $self->{input_file},
+        args => $self->{args},
         use => $self->{use},
         recurse_exclude_core => $self->{exclude_core} ? 1:0,
         recurse_exclude_xs   => 1,
@@ -306,6 +307,23 @@ Will be passed to the tracer. Will currently only affect the `fatpacker` and
 `require` methods (because those methods actually run your script).
 
 _
+        },
+        args => {
+            summary => 'Script arguments',
+            description => <<'_',
+
+Will be used when running your script, e.g. when `trace_method` is `require`.
+For example, if your script requires three arguments: `--foo`, `2`, `"bar baz"`
+then you can either use:
+
+    % fatten script output --args --foo --args 2 --args "bar baz"
+
+or:
+
+    % fatten script output --args-json '["--foo",2,"bar baz"]'
+
+_
+            schema => ['array*' => of => 'str*'],
         },
 
         squish => {
