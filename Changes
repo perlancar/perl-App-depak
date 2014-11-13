@@ -1,5 +1,11 @@
 Revision history for App-fatten
 
+0.14    2014-11-13 (PERLANCAR)
+
+        - [Bugfix] forgot to add 'last' for properly setting default output
+          file.
+
+
 0.13    2014-11-10 (PERLANCAR)
 
 	- [Incompatible change] Rename --strip and --strip-* to --stripper and
