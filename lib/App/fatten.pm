@@ -396,6 +396,7 @@ sub fatten {
             if ($output_file eq '-') {
                 $self->{output_file_is_stdout} = 1;
                 $self->{output_file} = $self->{abs_output_file} = (tempfile())[1];
+                last;
             } else {
                 return [412, "Output file '$output_file' exists, won't overwrite (see --overwrite)"]
                     if file_exists($output_file) && !$self->{overwrite};
