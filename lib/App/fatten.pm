@@ -176,7 +176,10 @@ sub _pack {
     # default system perl. perhaps make this configurable in the future.
     {
         my $ct = read_file($self->{abs_output_file});
-        $ct =~ s{\A#!(.+)}{#!/usr/bin/perl};
+        my $shebang = $self->{shebang} // '#!/usr/bin/perl';
+        $shebang = "#!$shebang" unless $shebang =~ /^#!/;
+        $shebang =~ s/\R+//g;
+        $ct =~ s{\A#!(.+)}{$shebang};
         write_file($self->{abs_output_file}, $ct);
     }
 
@@ -324,6 +327,12 @@ or:
 
 _
             schema => ['array*' => of => 'str*'],
+        },
+
+        shebang => {
+            summary => 'Set shebang line/path',
+            schema => 'str*',
+            default => '/usr/bin/perl',
         },
 
         squish => {
