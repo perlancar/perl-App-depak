@@ -92,16 +92,29 @@ sub _build_lib {
     @mods = uniq(@mods);
 
     # filter excluded
+    my $excluded_distmods;
     my @fmods;
   MOD:
     for my $mod (@mods) {
         if ($self->{exclude} && $mod ~~ @{ $self->{exclude} }) {
             $log->infof("Excluding %s: skipped", $mod);
-            next;
+            next MOD;
         }
         for (@{ $self->{exclude_pattern} // [] }) {
             if ($mod ~~ /$_/) {
                 $log->infof("Excluding %s: skipped by pattern %s", $mod, $_);
+                next MOD;
+            }
+        }
+        if ($self->{exclude_dist}) {
+            if (!$excluded_distmods) {
+                $excluded_distmods = [];
+                for (@{ $self->{exclude_dist} }) {
+                    push @$excluded_distmods, list_dist_modules($_);
+                }
+            }
+            if ($mod ~~ @$excluded_distmods) {
+                $log->infof("Excluding %s (by dist): skipped", $mod);
                 next MOD;
             }
         }
@@ -237,7 +250,7 @@ _
             cmdline_aliases => { I => {} },
         },
         include_dist => {
-            summary => 'Include extra modules',
+            summary => 'Include all modules of dist',
             description => <<'_',
 
 Just like the `include` option, but will include module as well as other modules
@@ -267,6 +280,18 @@ When you don't want to include a pattern of modules, specify it here.
 _
             schema => ['array*' => of => 'str*'],
             cmdline_aliases => { p => {} },
+        },
+        exclude_dist => {
+            summary => 'Exclude all modules of dist',
+            description => <<'_',
+
+Just like the `exclude` option, but will exclude module as well as other modules
+from the same distribution. Module name must be the main module of the
+distribution. Will determine other modules from the `.packlist` file.
+
+_
+            schema => ['array*' => of => 'str*'],
+            cmdline_aliases => {},
         },
         exclude_core => {
             summary => 'Whether to exclude core modules',
