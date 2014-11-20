@@ -294,7 +294,8 @@ _
             cmdline_aliases => {},
         },
         exclude_core => {
-            summary => 'Whether to exclude core modules',
+            summary => 'Exclude core modules',
+            'summary.alt.neg' => 'Do not exclude core modules',
             schema => ['bool' => default => 1],
         },
         perl_version => {
@@ -380,22 +381,26 @@ _
             default => 0,
         },
         stripper_ws => {
-            summary => "Will be passed to Perl::Stripper's strip_ws",
+            summary => "Set strip_ws=1 (strip whitespace) in Perl::Stripper",
+            'summary.alt.neg' => "Set strip_ws=0 (don't strip whitespace) in Perl::Stripper",
             schema => ['bool'],
             default => 1,
         },
         stripper_comment => {
-            summary => "Will be passed to Perl::Stripper's strip_comment",
+            summary => "Set strip_comment=1 (strip comments) in Perl::Stripper",
+            'summary.alt.neg' => "Set strip_comment=0 (don't strip comments) in Perl::Stripper",
             schema => ['bool'],
             default => 1,
         },
         stripper_pod => {
-            summary => "Will be passed to Perl::Stripper's strip_pod",
+            summary => "Set strip_pod=1 (strip POD) in Perl::Stripper",
+            'summary.alt.neg' => "Set strip_pod=0 (don't strip POD) in Perl::Stripper",
             schema => ['bool'],
             default => 1,
         },
         stripper_log => {
-            summary => "Will be passed to Perl::Stripper's strip_log",
+            summary => "Set strip_log=1 (strip log statements) in Perl::Stripper",
+            'summary.alt.neg' => "Set strip_log=0 (don't strip log statements) in Perl::Stripper",
             schema => ['bool'],
             default => 0,
         },
