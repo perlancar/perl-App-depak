@@ -10,6 +10,7 @@ use experimental 'smartmatch';
 use Log::Any '$log';
 BEGIN { no warnings; $main::Log_Level = 'info' }
 
+use App::tracepm;
 use Cwd qw(abs_path);
 use File::chdir;
 use File::Copy;
@@ -32,8 +33,6 @@ sub _sq { shell_quote($_[0]) }
 our %SPEC;
 
 sub _trace {
-    require App::tracepm;
-
     my $self = shift;
 
     $log->debugf("  Tracing with method '%s' ...", $self->{trace_method});
@@ -205,6 +204,17 @@ sub new {
     bless { @_ }, $class;
 }
 
+my $trace_methods;
+{
+    my $sch = $App::tracepm::SPEC{tracepm}{args}{method}{schema};
+    # XXX should've normalized schema
+    if (ref($sch->[1]) eq 'HASH') {
+        $trace_methods = $sch->[1]{in};
+    } else {
+        $trace_methods = $sch->[2];
+    }
+}
+
 $SPEC{fatten} = {
     v => 1.1,
     summary => 'Pack your dependencies onto your script file',
@@ -316,7 +326,10 @@ _
         },
         trace_method => {
             summary => "Which method to use to trace dependencies",
-            schema => ['str*', default => 'fatpacker'],
+            schema => ['str*', {
+                default => 'fatpacker',
+                in=>$trace_methods,
+            }],
             description => <<'_',
 
 The default is `fatpacker`, which is the same as what `fatpack trace` does.
