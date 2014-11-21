@@ -1,5 +1,13 @@
 Revision history for App-fatten
 
+0.18    2014-11-21 (PERLANCAR)
+
+        - No functional changes.
+
+        - [build] Rebuild with new Pod::Weaver::Plugin::Rinci to include OPTIONS
+          in script's POD.
+
+
 0.17    2014-11-20 (PERLANCAR)
 
 	- Add option: --exclude-dist (as counterpart for --include-dist).
