@@ -247,6 +247,7 @@ _
             schema => ['str*'],
             cmdline_aliases => { o=>{} },
             pos => 1,
+            tags => ['category:output'],
         },
         include => {
             summary => 'Include extra modules',
@@ -258,6 +259,7 @@ here.
 _
             schema => ['array*' => of => 'str*'],
             cmdline_aliases => { I => {} },
+            tags => ['category:module-selection'],
         },
         include_dist => {
             summary => 'Include all modules of dist',
@@ -270,6 +272,7 @@ distribution. Will determine other modules from the `.packlist` file.
 _
             schema => ['array*' => of => 'str*'],
             cmdline_aliases => {},
+            tags => ['category:module-selection'],
         },
         exclude => {
             summary => 'Modules to exclude',
@@ -280,6 +283,7 @@ When you don't want to include a module, specify it here.
 _
             schema => ['array*' => of => 'str*'],
             cmdline_aliases => { E => {} },
+            tags => ['category:module-selection'],
         },
         exclude_pattern => {
             summary => 'Regex patterns of modules to exclude',
@@ -290,6 +294,7 @@ When you don't want to include a pattern of modules, specify it here.
 _
             schema => ['array*' => of => 'str*'],
             cmdline_aliases => { p => {} },
+            tags => ['category:module-selection'],
         },
         exclude_dist => {
             summary => 'Exclude all modules of dist',
@@ -302,11 +307,13 @@ distribution. Will determine other modules from the `.packlist` file.
 _
             schema => ['array*' => of => 'str*'],
             cmdline_aliases => {},
+            tags => ['category:module-selection'],
         },
         exclude_core => {
             summary => 'Exclude core modules',
             'summary.alt.neg' => 'Do not exclude core modules',
             schema => ['bool' => default => 1],
+            tags => ['category:module-selection'],
         },
         perl_version => {
             summary => 'Perl version to target, defaults to current running version',
@@ -320,9 +327,11 @@ _
             schema => ['str*'],
             cmdline_aliases => { V=>{} },
         },
+
         overwrite => {
             schema => [bool => default => 0],
             summary => 'Whether to overwrite output if previously exists',
+            tags => ['category:output'],
         },
         trace_method => {
             summary => "Which method to use to trace dependencies",
@@ -339,6 +348,7 @@ several methods available, please see `App::tracepm` for more details.
 
 _
             cmdline_aliases => { t=>{} },
+            tags => ['category:module-selection'],
         },
         use => {
             summary => 'Additional modules to "use"',
@@ -349,6 +359,7 @@ Will be passed to the tracer. Will currently only affect the `fatpacker` and
 `require` methods (because those methods actually run your script).
 
 _
+            tags => ['category:module-selection'],
         },
         args => {
             summary => 'Script arguments',
@@ -377,51 +388,85 @@ _
         squish => {
             summary => 'Whether to squish included modules using Perl::Squish',
             schema => ['bool' => default=>0],
+            tags => ['category:stripping'],
         },
 
         strip => {
             summary => 'Whether to strip included modules using Perl::Strip',
             schema => ['bool' => default=>0],
+            tags => ['category:stripping'],
         },
 
         stripper => {
             summary => 'Whether to strip included modules using Perl::Stripper',
             schema => ['bool' => default=>0],
+            tags => ['category:stripping'],
         },
         stripper_maintain_linum => {
-            summary => "Will be passed to Perl::Stripper's maintain_linum",
+            summary => "Set maintain_linum=1 in Perl::Stripper",
             schema => ['bool'],
             default => 0,
+            tags => ['category:stripping'],
+            description => <<'_',
+
+Only relevant when stripping using Perl::Stripper.
+
+_
         },
         stripper_ws => {
             summary => "Set strip_ws=1 (strip whitespace) in Perl::Stripper",
             'summary.alt.neg' => "Set strip_ws=0 (don't strip whitespace) in Perl::Stripper",
             schema => ['bool'],
             default => 1,
+            tags => ['category:stripping'],
+            description => <<'_',
+
+Only relevant when stripping using Perl::Stripper.
+
+_
         },
         stripper_comment => {
             summary => "Set strip_comment=1 (strip comments) in Perl::Stripper",
             'summary.alt.neg' => "Set strip_comment=0 (don't strip comments) in Perl::Stripper",
             schema => ['bool'],
             default => 1,
+            description => <<'_',
+
+Only relevant when stripping using Perl::Stripper.
+
+_
+            tags => ['category:stripping'],
         },
         stripper_pod => {
             summary => "Set strip_pod=1 (strip POD) in Perl::Stripper",
             'summary.alt.neg' => "Set strip_pod=0 (don't strip POD) in Perl::Stripper",
             schema => ['bool'],
             default => 1,
+            tags => ['category:stripping'],
+            description => <<'_',
+
+Only relevant when stripping using Perl::Stripper.
+
+_
         },
         stripper_log => {
             summary => "Set strip_log=1 (strip log statements) in Perl::Stripper",
             'summary.alt.neg' => "Set strip_log=0 (don't strip log statements) in Perl::Stripper",
             schema => ['bool'],
             default => 0,
+            tags => ['category:stripping'],
+            description => <<'_',
+
+Only relevant when stripping using Perl::Stripper.
+
+_
         },
         # XXX strip_log_levels
 
         debug_keep_tempdir => {
             summary => 'Keep temporary directory for debugging',
             schema => ['bool' => default=>0],
+            tags => ['category:debugging'],
         },
     },
     deps => {
