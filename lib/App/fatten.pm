@@ -215,6 +215,22 @@ my $trace_methods;
     }
 }
 
+my $_comp_module = sub {
+    my %args = @_;
+    require Complete::Module;
+    my $sep;
+    if ($args{word} =~ m!::!) {
+        $sep = '::';
+    } else {
+        $sep = '/';
+    }
+    Complete::Module::complete_module(
+        word => $args{word}, ci => 1,
+        find_pod => 0, find_pmc => 0,
+        separator => $sep,
+    );
+};
+
 $SPEC{fatten} = {
     v => 1.1,
     summary => 'Pack your dependencies onto your script file',
@@ -260,6 +276,7 @@ _
             schema => ['array*' => of => 'str*'],
             cmdline_aliases => { I => {} },
             tags => ['category:module-selection'],
+            element_completion => $_comp_module,
         },
         include_dist => {
             summary => 'Include all modules of dist',
@@ -273,6 +290,7 @@ _
             schema => ['array*' => of => 'str*'],
             cmdline_aliases => {},
             tags => ['category:module-selection'],
+            element_completion => $_comp_module, # XXX complete distnames?
         },
         exclude => {
             summary => 'Modules to exclude',
@@ -284,6 +302,7 @@ _
             schema => ['array*' => of => 'str*'],
             cmdline_aliases => { E => {} },
             tags => ['category:module-selection'],
+            element_completion => $_comp_module, # XXX complete distnames?
         },
         exclude_pattern => {
             summary => 'Regex patterns of modules to exclude',
@@ -308,6 +327,7 @@ _
             schema => ['array*' => of => 'str*'],
             cmdline_aliases => {},
             tags => ['category:module-selection'],
+            element_completion => $_comp_module, # XXX complete distnames?
         },
         exclude_core => {
             summary => 'Exclude core modules',
@@ -326,6 +346,7 @@ different sets of core modules as well as different versions of the modules.
 _
             schema => ['str*'],
             cmdline_aliases => { V=>{} },
+            # XXX completion: list of known perl versions by Module::CoreList?
         },
 
         overwrite => {
@@ -360,6 +381,7 @@ Will be passed to the tracer. Will currently only affect the `fatpacker` and
 
 _
             tags => ['category:module-selection'],
+            element_completion => $_comp_module, # XXX complete distnames?
         },
         args => {
             summary => 'Script arguments',
@@ -480,6 +502,18 @@ sub fatten {
     my $tempdir = tempdir(CLEANUP => 0);
     $log->debugf("Created tempdir %s", $tempdir);
     $self->{tempdir} = $tempdir;
+
+    # for convenience of completion in bash, we allow / to separate namespace.
+    # we convert it back to :: here.
+    for (@{ $self->{exclude} // [] },
+         @{ $self->{exclude_dist} // [] },
+         @{ $self->{include} // [] },
+         @{ $self->{include_dist} // [] },
+         @{ $self->{use} // [] },
+     ) {
+        s!/!::!g;
+        s/\.pm\z//;
+    }
 
     # my understanding is that fatlib contains the stuffs beside the pure-perl
     # .pm files, and currently won't pack anyway.
