@@ -1,5 +1,16 @@
 Revision history for App-fatten
 
+0.20    2014-11-23 (PERLANCAR)
+
+        - No functional changes.
+
+        - Tweak tab completion (module name completion for
+          --{include,exclude,include-dist,exclude-dist,use}, trace methods for
+          --trace).
+
+        - Tweak POD/option categories.
+
+
 0.19    2014-11-21 (PERLANCAR)
 
         - No functional changes.
