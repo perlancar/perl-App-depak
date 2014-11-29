@@ -1,5 +1,14 @@
 Revision history for App-fatten
 
+0.21    2014-11-29 (PERLANCAR)
+
+        - No functional changes.
+
+        - [build] Rebuild with new
+          Pod::Weaver::Section::Completion::PerinciCmdLine to add instruction on
+          how to activate shell completion for fish.
+
+
 0.20    2014-11-23 (PERLANCAR)
 
         - No functional changes.
