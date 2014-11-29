@@ -247,6 +247,7 @@ _
             default => '-',
             pos => 0,
             cmdline_aliases => { i=>{} },
+            'x.schema.entity' => 'filename',
         },
         output_file => {
             summary => 'Path to output file',
@@ -264,6 +265,7 @@ _
             cmdline_aliases => { o=>{} },
             pos => 1,
             tags => ['category:output'],
+            'x.schema.entity' => 'filename',
         },
         include => {
             summary => 'Include extra modules',
@@ -277,6 +279,7 @@ _
             cmdline_aliases => { I => {} },
             tags => ['category:module-selection'],
             element_completion => $_comp_module,
+            'x.schema.entity' => 'modulename',
         },
         include_dist => {
             summary => 'Include all modules of dist',
@@ -291,6 +294,7 @@ _
             cmdline_aliases => {},
             tags => ['category:module-selection'],
             element_completion => $_comp_module, # XXX complete distnames?
+            'x.schema.entity' => 'modulename',
         },
         exclude => {
             summary => 'Modules to exclude',
@@ -303,6 +307,7 @@ _
             cmdline_aliases => { E => {} },
             tags => ['category:module-selection'],
             element_completion => $_comp_module, # XXX complete distnames?
+            'x.schema.entity' => 'modulename',
         },
         exclude_pattern => {
             summary => 'Regex patterns of modules to exclude',
@@ -314,6 +319,7 @@ _
             schema => ['array*' => of => 'str*'],
             cmdline_aliases => { p => {} },
             tags => ['category:module-selection'],
+            'x.schema.entity' => 'modulename',
         },
         exclude_dist => {
             summary => 'Exclude all modules of dist',
@@ -328,6 +334,7 @@ _
             cmdline_aliases => {},
             tags => ['category:module-selection'],
             element_completion => $_comp_module, # XXX complete distnames?
+            'x.schema.entity' => 'modulename',
         },
         exclude_core => {
             summary => 'Exclude core modules',
@@ -382,6 +389,7 @@ Will be passed to the tracer. Will currently only affect the `fatpacker` and
 _
             tags => ['category:module-selection'],
             element_completion => $_comp_module, # XXX complete distnames?
+            'x.schema.entity' => 'modulename',
         },
         args => {
             summary => 'Script arguments',
