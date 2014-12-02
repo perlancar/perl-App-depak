@@ -269,6 +269,7 @@ _
         },
         include => {
             summary => 'Include extra modules',
+            'summary.alt.singular' => 'Include an extra module',
             description => <<'_',
 
 When the tracing process fails to include a required module, you can add it
@@ -298,6 +299,7 @@ _
         },
         exclude => {
             summary => 'Modules to exclude',
+            'summary.alt.singular' => 'Exclude a module',
             description => <<'_',
 
 When you don't want to include a module, specify it here.
@@ -311,6 +313,7 @@ _
         },
         exclude_pattern => {
             summary => 'Regex patterns of modules to exclude',
+            'summary.alt.singular' => 'Regex pattern of modules to exclude',
             description => <<'_',
 
 When you don't want to include a pattern of modules, specify it here.
@@ -380,6 +383,7 @@ _
         },
         use => {
             summary => 'Additional modules to "use"',
+            'summary.alt.singular' => 'Additional module to "use"',
             schema => ['array*' => of => 'str*'],
             description => <<'_',
 
@@ -393,6 +397,7 @@ _
         },
         args => {
             summary => 'Script arguments',
+            'summary.alt.singular' => 'Script argument',
             description => <<'_',
 
 Will be used when running your script, e.g. when `trace_method` is `require`.
