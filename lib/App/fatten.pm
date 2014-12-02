@@ -269,7 +269,7 @@ _
         },
         include => {
             summary => 'Include extra modules',
-            'summary.alt.singular' => 'Include an extra module',
+            'summary.alt.numnoun.singular' => 'Include an extra module',
             description => <<'_',
 
 When the tracing process fails to include a required module, you can add it
@@ -299,7 +299,7 @@ _
         },
         exclude => {
             summary => 'Modules to exclude',
-            'summary.alt.singular' => 'Exclude a module',
+            'summary.alt.numnoun.singular' => 'Exclude a module',
             description => <<'_',
 
 When you don't want to include a module, specify it here.
@@ -313,7 +313,7 @@ _
         },
         exclude_pattern => {
             summary => 'Regex patterns of modules to exclude',
-            'summary.alt.singular' => 'Regex pattern of modules to exclude',
+            'summary.alt.numnoun.singular' => 'Regex pattern of modules to exclude',
             description => <<'_',
 
 When you don't want to include a pattern of modules, specify it here.
@@ -341,7 +341,7 @@ _
         },
         exclude_core => {
             summary => 'Exclude core modules',
-            'summary.alt.neg' => 'Do not exclude core modules',
+            'summary.alt.bool.not' => 'Do not exclude core modules',
             schema => ['bool' => default => 1],
             tags => ['category:module-selection'],
         },
@@ -383,7 +383,7 @@ _
         },
         use => {
             summary => 'Additional modules to "use"',
-            'summary.alt.singular' => 'Additional module to "use"',
+            'summary.alt.numnoun.singular' => 'Additional module to "use"',
             schema => ['array*' => of => 'str*'],
             description => <<'_',
 
@@ -397,7 +397,7 @@ _
         },
         args => {
             summary => 'Script arguments',
-            'summary.alt.singular' => 'Script argument',
+            'summary.alt.numnoun.singular' => 'Script argument',
             description => <<'_',
 
 Will be used when running your script, e.g. when `trace_method` is `require`.
@@ -450,7 +450,7 @@ _
         },
         stripper_ws => {
             summary => "Set strip_ws=1 (strip whitespace) in Perl::Stripper",
-            'summary.alt.neg' => "Set strip_ws=0 (don't strip whitespace) in Perl::Stripper",
+            'summary.alt.bool.not' => "Set strip_ws=0 (don't strip whitespace) in Perl::Stripper",
             schema => ['bool'],
             default => 1,
             tags => ['category:stripping'],
@@ -462,7 +462,7 @@ _
         },
         stripper_comment => {
             summary => "Set strip_comment=1 (strip comments) in Perl::Stripper",
-            'summary.alt.neg' => "Set strip_comment=0 (don't strip comments) in Perl::Stripper",
+            'summary.alt.bool.not' => "Set strip_comment=0 (don't strip comments) in Perl::Stripper",
             schema => ['bool'],
             default => 1,
             description => <<'_',
@@ -474,7 +474,7 @@ _
         },
         stripper_pod => {
             summary => "Set strip_pod=1 (strip POD) in Perl::Stripper",
-            'summary.alt.neg' => "Set strip_pod=0 (don't strip POD) in Perl::Stripper",
+            'summary.alt.bool.not' => "Set strip_pod=0 (don't strip POD) in Perl::Stripper",
             schema => ['bool'],
             default => 1,
             tags => ['category:stripping'],
@@ -486,7 +486,7 @@ _
         },
         stripper_log => {
             summary => "Set strip_log=1 (strip log statements) in Perl::Stripper",
-            'summary.alt.neg' => "Set strip_log=0 (don't strip log statements) in Perl::Stripper",
+            'summary.alt.bool.not' => "Set strip_log=0 (don't strip log statements) in Perl::Stripper",
             schema => ['bool'],
             default => 0,
             tags => ['category:stripping'],
