@@ -1,5 +1,13 @@
 Revision history for App-fatten
 
+0.22    2014-12-02 (PERLANCAR)
+
+        - No functional changes.
+
+        - [ux] Tweak Rinci metadata (add singular summaries, adjust to DefHash
+          1.0.8).
+
+
 0.21    2014-11-29 (PERLANCAR)
 
         - No functional changes.
