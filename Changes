@@ -1,5 +1,12 @@
 Revision history for App-fatten
 
+0.24    2014-12-04 (PERLANCAR)
+
+	- No functional changes.
+
+	- Switch {SHARYANTO::,}Dist::Util.
+
+
 0.23    2014-12-03 (PERLANCAR)
 
         - No functional changes.
