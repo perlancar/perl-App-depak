@@ -12,6 +12,7 @@ BEGIN { no warnings; $main::Log_Level = 'info' }
 
 use App::tracepm;
 use Cwd qw(abs_path);
+use Dist::Util qw(list_dist_modules);
 use File::chdir;
 use File::Copy;
 use File::Path qw(make_path remove_tree);
@@ -23,7 +24,6 @@ use List::Util qw(first);
 use Log::Any::For::Builtins qw(system my_qx);
 use Module::Path qw(module_path);
 use Proc::ChildError qw(explain_child_error);
-use SHARYANTO::Dist::Util qw(list_dist_modules);
 use SHARYANTO::File::Util qw(file_exists);
 use String::ShellQuote;
 use version;
