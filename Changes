@@ -1,5 +1,13 @@
 Revision history for App-fatten
 
+0.23    2014-12-03 (PERLANCAR)
+
+        - No functional changes.
+
+        - [build] Rebuild with new Perinci::Sub::To::CLIDocData which contains
+          better categorization of options.
+
+
 0.22    2014-12-02 (PERLANCAR)
 
         - No functional changes.
