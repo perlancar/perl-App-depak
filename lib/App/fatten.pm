@@ -24,7 +24,7 @@ use List::Util qw(first);
 use Log::Any::For::Builtins qw(system my_qx);
 use Module::Path qw(module_path);
 use Proc::ChildError qw(explain_child_error);
-use SHARYANTO::File::Util qw(file_exists);
+use File::MoreUtil qw(file_exists);
 use String::ShellQuote;
 use version;
 
