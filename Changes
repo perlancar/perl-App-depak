@@ -1,5 +1,13 @@
 Revision history for App-fatten
 
+0.25    2014-12-05 (PERLANCAR)
+
+	- No functional changes.
+
+	- Use new name of renamed module SHARYANTO::File::Util ->
+	  File::MoreUtil.
+
+
 0.24    2014-12-04 (PERLANCAR)
 
 	- No functional changes.
