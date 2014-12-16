@@ -15,7 +15,7 @@ Perinci::CmdLine::fatten->new(
 )->run;
 
 #ABSTRACT: Pack your dependencies onto your script file
-#PODNAME: fatten
+#PODNAME:
 
 =head1 SYNOPSIS
 
