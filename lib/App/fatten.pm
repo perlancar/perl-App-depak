@@ -620,7 +620,7 @@ sub fatten {
 }
 
 1;
-# ABSTRACT: Pack your dependencies onto your script file
+# ABSTRACT:
 
 =for Pod::Coverage ^(new)$
 
