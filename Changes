@@ -1,5 +1,12 @@
 Revision history for App-fatten
 
+0.26    2014-12-26 (PERLANCAR)
+
+	- No functional changes.
+
+	- [dist] Set minimum version of App::tracepm which contains fix.
+
+
 0.25    2014-12-05 (PERLANCAR)
 
 	- No functional changes.
