@@ -1,5 +1,15 @@
 Revision history for App-fatten
 
+0.27    2014-12-26 (PERLANCAR)
+
+	- [Bugfix] Avoid changing working directory in _build_lib() to
+	  avoid interfering with finding modules in a relative directory
+	  [GH#4].
+
+	- Replace Module::Path with Module::Path::More, because I think I
+	  want to avoid abs_path().
+
+
 0.26    2014-12-26 (PERLANCAR)
 
 	- No functional changes.
