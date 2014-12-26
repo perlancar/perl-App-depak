@@ -60,8 +60,6 @@ sub _build_lib {
     my $totsize = 0;
     my $totfiles = 0;
 
-    local $CWD = "$tempdir/lib";
-
     my @mods; # modules to add
 
     my $deps = $self->{deps};
@@ -127,7 +125,10 @@ sub _build_lib {
         my $modp = $mod; $modp =~ s!::!/!g; $modp .= ".pm";
         my ($dir) = $modp =~ m!(.+)/(.+)!;
         if ($dir) {
-            make_path($dir) unless -d $dir;
+            my $dir_to_make = "$tempdir/lib/$dir";
+            unless (-d $dir_to_make) {
+                make_path($dir_to_make) or die "Can't make_path: $dir_to_make";
+            }
         }
 
         if ($self->{stripper}) {
@@ -144,22 +145,22 @@ sub _build_lib {
             $log->debug("  Stripping $mpath --> $modp ...");
             my $src = read_file($mpath);
             my $stripped = $stripper->strip($src);
-            write_file($modp, $stripped);
+            write_file("$tempdir/lib/$modp", $stripped);
         } elsif ($self->{strip}) {
             require Perl::Strip;
             my $strip = Perl::Strip->new;
             $log->debug("  Stripping $mpath --> $modp ...");
             my $src = read_file($mpath);
             my $stripped = $strip->strip($src);
-            write_file($modp, $stripped);
+            write_file("$tempdir/lib/$modp", $stripped);
         } elsif ($self->{squish}) {
             $log->debug("  Squishing $mpath --> $modp ...");
             require Perl::Squish;
             my $squish = Perl::Squish->new;
-            $squish->file($mpath, $modp);
+            $squish->file($mpath, "$tempdir/lib/$modp");
         } else {
-            $log->debug("  Copying $mpath --> $modp ...");
-            copy($mpath, $modp);
+            $log->debug("  Copying $mpath --> $tempdir/lib/$modp ...");
+            copy($mpath, "$tempdir/lib/$modp");
         }
 
         $totfiles++;
