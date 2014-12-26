@@ -22,7 +22,7 @@ use File::Temp qw(tempfile tempdir);
 use List::MoreUtils qw(uniq);
 use List::Util qw(first);
 use Log::Any::For::Builtins qw(system my_qx);
-use Module::Path qw(module_path);
+use Module::Path::More qw(module_path);
 use Proc::ChildError qw(explain_child_error);
 use File::MoreUtil qw(file_exists);
 use String::ShellQuote;
@@ -122,7 +122,7 @@ sub _build_lib {
     @mods = @fmods;
 
     for my $mod (@mods) {
-        my $mpath = module_path($mod) or die "Can't find path for $mod";
+        my $mpath = module_path(module=>$mod) or die "Can't find path for $mod";
 
         my $modp = $mod; $modp =~ s!::!/!g; $modp .= ".pm";
         my ($dir) = $modp =~ m!(.+)/(.+)!;
