@@ -216,22 +216,6 @@ my $trace_methods;
     }
 }
 
-my $_comp_module = sub {
-    my %args = @_;
-    require Complete::Module;
-    my $sep;
-    if ($args{word} =~ m!::!) {
-        $sep = '::';
-    } else {
-        $sep = '/';
-    }
-    Complete::Module::complete_module(
-        word => $args{word}, ci => 1,
-        find_pod => 0, find_pmc => 0,
-        separator => $sep,
-    );
-};
-
 $SPEC{fatten} = {
     v => 1.1,
     summary => 'Pack your dependencies onto your script file',
@@ -280,7 +264,11 @@ _
             schema => ['array*' => of => 'str*'],
             cmdline_aliases => { I => {} },
             tags => ['category:module-selection'],
-            element_completion => $_comp_module,
+            element_completion => sub {
+                require Complete::Module;
+                my %args = @_;
+                Complete::Module::complete_module(word=>$args{word});
+            },
             'x.schema.entity' => 'modulename',
         },
         include_dist => {
@@ -295,7 +283,8 @@ _
             schema => ['array*' => of => 'str*'],
             cmdline_aliases => {},
             tags => ['category:module-selection'],
-            element_completion => $_comp_module, # XXX complete distnames?
+            element_completion => {
+            },
             'x.schema.entity' => 'modulename',
         },
         exclude => {
@@ -309,7 +298,11 @@ _
             schema => ['array*' => of => 'str*'],
             cmdline_aliases => { E => {} },
             tags => ['category:module-selection'],
-            element_completion => $_comp_module, # XXX complete distnames?
+            element_completion => sub {
+                require Complete::Module;
+                my %args = @_;
+                Complete::Module::complete_module(word=>$args{word});
+            },
             'x.schema.entity' => 'modulename',
         },
         exclude_pattern => {
@@ -337,7 +330,11 @@ _
             schema => ['array*' => of => 'str*'],
             cmdline_aliases => {},
             tags => ['category:module-selection'],
-            element_completion => $_comp_module, # XXX complete distnames?
+            element_completion => sub {
+                require Complete::Dist;
+                my %args = @_;
+                Complete::Dist::complete_dist(word=>$args{word});
+            },
             'x.schema.entity' => 'modulename',
         },
         exclude_core => {
@@ -393,7 +390,11 @@ Will be passed to the tracer. Will currently only affect the `fatpacker` and
 
 _
             tags => ['category:module-selection'],
-            element_completion => $_comp_module, # XXX complete distnames?
+            element_completion => sub {
+                require Complete::Module;
+                my %args = @_;
+                Complete::Module::complete_module(word=>$args{word});
+            },
             'x.schema.entity' => 'modulename',
         },
         args => {
