@@ -19,15 +19,34 @@ Perinci::CmdLine::fatten->new(
 
 =head1 SYNOPSIS
 
- # by default outputs to '<script>.packed' in the source directory, or in
+Basic usage (input & output):
+
+ # by default outputs to '<script>.fatpack' in the source directory, or in
  # current directory if source directory is not writable.
  % fatten bin/script.pl
 
- # some options (set debug, set target perl version, add some modules, set
- # output)
- % fatten --debug -V 5.10.1 -I Foo::Bar -I Baz script.pl script.pl.packed
+ # specify output path
+ % fatten bin/script.pl -o /tmp/script.pl
 
- # see more options
+ # output to stdout
+ % fatten bin/script.pl -o -
+
+ # input from stdin (output will default to stdout, unless you give -o)
+ % download-perl-script | fatten
+
+ # see debug messages (what modules are being traced and included, etc)
+ % fatten --debug <script.pl >script.fatpack
+
+Including and excluding modules:
+
+ # add some more modules not detected by the tracer
+ % fatten -I Foo::Bar -I Foo::Baz bin/script.pl -o script.fatpack
+
+ # change trace method, usually 'require' will give pretty complete result
+ % fatten -t require <script.pl >script.fatpack
+
+See more options:
+
  % fatten --help
 
 
