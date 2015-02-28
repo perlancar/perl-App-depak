@@ -15,16 +15,16 @@ use Cwd qw(abs_path);
 use Dist::Util qw(list_dist_modules);
 use File::chdir;
 use File::Copy;
+use File::MoreUtil qw(file_exists);
 use File::Path qw(make_path remove_tree);
-use File::Spec;
 use File::Slurp::Tiny qw(write_file read_file);
+use File::Spec;
 use File::Temp qw(tempfile tempdir);
 use List::MoreUtils qw(uniq);
 use List::Util qw(first);
 use Log::Any::For::Builtins qw(system my_qx);
 use Module::Path::More qw(module_path);
 use Proc::ChildError qw(explain_child_error);
-use File::MoreUtil qw(file_exists);
 use String::ShellQuote;
 use version;
 
