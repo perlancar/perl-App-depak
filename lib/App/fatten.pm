@@ -8,32 +8,26 @@ use strict;
 use warnings;
 use experimental 'smartmatch';
 use Log::Any '$log';
+use Log::Any::For::Builtins qw(system my_qx);
 BEGIN { no warnings; $main::Log_Level = 'info' }
 
-use App::tracepm;
-use Cwd qw(abs_path);
-use Dist::Util qw(list_dist_modules);
+use App::tracepm ();
+
 use File::chdir;
-use File::Copy;
-use File::MoreUtil qw(file_exists);
-use File::Path qw(make_path remove_tree);
-use File::Slurp::Tiny qw(write_file read_file);
-use File::Spec;
-use File::Temp qw(tempfile tempdir);
-use List::MoreUtils qw(uniq);
-use List::Util qw(first);
-use Log::Any::For::Builtins qw(system my_qx);
-use Module::Path::More qw(module_path);
-use Proc::ChildError qw(explain_child_error);
-use String::ShellQuote;
+use File::Slurper qw(write_text read_text);
 use version;
 
-sub _sq { shell_quote($_[0]) }
+sub _sq {
+    require String::ShellQuote;
+    shell_quote($_[0]);
+}
 
 our %SPEC;
 
 sub _trace {
     my $self = shift;
+
+    return if $self->{trace_method} eq 'none';
 
     $log->debugf("  Tracing with method '%s' ...", $self->{trace_method});
     my $res = App::tracepm::tracepm(
@@ -53,6 +47,12 @@ sub _trace {
 }
 
 sub _build_lib {
+    require Dist::Util;
+    require File::Copy;
+    require File::Path;
+    require List::MoreUtils;
+    require Module::Path::More;
+
     my $self = shift;
 
     my $tempdir = $self->{tempdir};
@@ -76,7 +76,7 @@ sub _build_lib {
     }
 
     for (@{ $self->{include_dist} // [] }) {
-        my @distmods = list_dist_modules($_);
+        my @distmods = Dist::Util::list_dist_modules($_);
         if (@distmods) {
             $log->debugf("  Adding modules: %s (included dist)", join(", ", @distmods));
             push @mods, @distmods;
@@ -107,7 +107,7 @@ sub _build_lib {
             if (!$excluded_distmods) {
                 $excluded_distmods = [];
                 for (@{ $self->{exclude_dist} }) {
-                    push @$excluded_distmods, list_dist_modules($_);
+                    push @$excluded_distmods, Dist::Util::list_dist_modules($_);
                 }
             }
             if ($mod ~~ @$excluded_distmods) {
@@ -120,14 +120,14 @@ sub _build_lib {
     @mods = @fmods;
 
     for my $mod (@mods) {
-        my $mpath = module_path(module=>$mod) or die "Can't find path for $mod";
+        my $mpath = Module::Path::More::module_path(module=>$mod) or die "Can't find path for $mod";
 
         my $modp = $mod; $modp =~ s!::!/!g; $modp .= ".pm";
         my ($dir) = $modp =~ m!(.+)/(.+)!;
         if ($dir) {
             my $dir_to_make = "$tempdir/lib/$dir";
             unless (-d $dir_to_make) {
-                make_path($dir_to_make) or die "Can't make_path: $dir_to_make";
+                File::Path::make_path($dir_to_make) or die "Can't make_path: $dir_to_make";
             }
         }
 
@@ -143,16 +143,16 @@ sub _build_lib {
                 );
             };
             $log->debug("  Stripping $mpath --> $modp ...");
-            my $src = read_file($mpath);
+            my $src = read_text($mpath);
             my $stripped = $stripper->strip($src);
-            write_file("$tempdir/lib/$modp", $stripped);
+            write_text("$tempdir/lib/$modp", $stripped);
         } elsif ($self->{strip}) {
             require Perl::Strip;
             my $strip = Perl::Strip->new;
             $log->debug("  Stripping $mpath --> $modp ...");
-            my $src = read_file($mpath);
+            my $src = read_text($mpath);
             my $stripped = $strip->strip($src);
-            write_file("$tempdir/lib/$modp", $stripped);
+            write_text("$tempdir/lib/$modp", $stripped);
         } elsif ($self->{squish}) {
             $log->debug("  Squishing $mpath --> $modp ...");
             require Perl::Squish;
@@ -160,7 +160,7 @@ sub _build_lib {
             $squish->file($mpath, "$tempdir/lib/$modp");
         } else {
             $log->debug("  Copying $mpath --> $tempdir/lib/$modp ...");
-            copy($mpath, "$tempdir/lib/$modp");
+            File::Copy::copy($mpath, "$tempdir/lib/$modp");
         }
 
         $totfiles++;
@@ -170,6 +170,8 @@ sub _build_lib {
 }
 
 sub _pack {
+    require Proc::ChildError;
+
     my $self = shift;
 
     my $tempdir = $self->{tempdir};
@@ -181,19 +183,19 @@ sub _pack {
         _sq($self->{abs_input_file}), " > ",
         _sq($self->{abs_output_file}),
     );
-    die "Can't fatpack file: ".explain_child_error() if $?;
+    die "Can't fatpack file: ".Proc::ChildError::explain_child_error() if $?;
 
     chmod 0755, $self->{abs_output_file};
 
     # replace shebang line (which contains perl path used by fatpack) with a
     # default system perl. perhaps make this configurable in the future.
     {
-        my $ct = read_file($self->{abs_output_file});
+        my $ct = read_text($self->{abs_output_file});
         my $shebang = $self->{shebang} // '#!/usr/bin/perl';
         $shebang = "#!$shebang" unless $shebang =~ /^#!/;
         $shebang =~ s/\R+//g;
         $ct =~ s{\A#!(.+)}{$shebang};
-        write_file($self->{abs_output_file}, $ct);
+        write_text($self->{abs_output_file}, $ct);
     }
 
     $log->infof("  Produced %s (%.1f KB)",
@@ -511,6 +513,11 @@ _
     },
 };
 sub fatten {
+    require Cwd;
+    require File::MoreUtil;
+    require File::Spec;
+    require File::Temp;
+
     my %args = @_;
     my $self = __PACKAGE__->new(%args);
 
@@ -541,7 +548,7 @@ sub fatten {
 
     if ($self->{input_file} eq '-') {
         $self->{input_file_is_stdin} = 1;
-        $self->{input_file} = $self->{abs_input_file} = (tempfile())[1];
+        $self->{input_file} = $self->{abs_input_file} = (File::Temp::tempfile())[1];
         open my($fh), ">", $self->{abs_input_file}
             or return [500, "Can't write temporary input file '$self->{abs_input_file}': $!"];
         local $_; while (<STDIN>) { print $fh $_ }
@@ -549,7 +556,7 @@ sub fatten {
     } else {
         (-f $self->{input_file})
             or return [500, "No such input file: $self->{input_file}"];
-        $self->{abs_input_file} = abs_path($self->{input_file}) or return
+        $self->{abs_input_file} = Cwd::abs_path($self->{input_file}) or return
             [500, "Can't find absolute path of input file $self->{input_file}"];
     }
 
@@ -559,11 +566,11 @@ sub fatten {
         if (defined $output_file) {
             if ($output_file eq '-') {
                 $self->{output_file_is_stdout} = 1;
-                $self->{output_file} = $self->{abs_output_file} = (tempfile())[1];
+                $self->{output_file} = $self->{abs_output_file} = (File::Temp::tempfile())[1];
                 last;
             } else {
                 return [412, "Output file '$output_file' exists, won't overwrite (see --overwrite)"]
-                    if file_exists($output_file) && !$self->{overwrite};
+                    if File::MoreUtil::file_exists($output_file) && !$self->{overwrite};
                 last if open my($fh), ">", $output_file;
                 return [500, "Can't write to output file '$output_file': $!"];
             }
@@ -575,13 +582,13 @@ sub fatten {
         # try <input>.fatpack in the source directory
         $output_file = File::Spec->catpath($vol, $dir, "$file.fatpack");
         return [412, "Output file '$output_file' exists, won't overwrite (see --overwrite)"]
-            if file_exists($output_file) && !$self->{overwrite};
+            if File::MoreUtil::file_exists($output_file) && !$self->{overwrite};
         last if open $fh, ">", $output_file;
 
         # if failed, try <input>.fatpack in the current directory
         $output_file = "$CWD/$file.fatpack";
         return [412, "Output file '$output_file' exists, won't overwrite (see --overwrite)"]
-            if file_exists($output_file) && !$self->{overwrite};
+            if File::MoreUtil::file_exists($output_file) && !$self->{overwrite};
         last if open $fh, ">", $output_file;
 
         # failed too, bail
@@ -589,7 +596,7 @@ sub fatten {
                     "current directory: $!"];
     }
     $self->{output_file} = $output_file;
-    $self->{abs_output_file} //= abs_path($output_file) or return
+    $self->{abs_output_file} //= Cwd::abs_path($output_file) or return
         [500, "Can't find absolute path of output file '$self->{output_file}'"];
 
     $log->infof("Tracing dependencies ...");
@@ -605,7 +612,7 @@ sub fatten {
         $log->infof("Keeping tempdir %s for debugging", $tempdir);
     } else {
         $log->debugf("Deleting tempdir %s ...", $tempdir);
-        remove_tree($tempdir);
+        File::Path::remove_tree($tempdir);
     }
 
     if ($self->{input_file_is_stdin}) {
