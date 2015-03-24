@@ -264,14 +264,21 @@ here.
 
 _
             schema => ['array*' => of => 'str*'],
-            cmdline_aliases => { I => {} },
+            cmdline_aliases => { I=>{} },
             tags => ['category:module-selection'],
             element_completion => sub {
                 require Complete::Module;
                 my %args = @_;
                 Complete::Module::complete_module(word=>$args{word});
             },
-            'x.schema.entity' => 'modulename',
+            'x.schema.element_entity' => 'modulename',
+        },
+        include_from => {
+            summary => 'Include extra modules under directories',
+            'summary.alt.numnoun.singular' => 'Include extra modules under a directory',
+            schema => ['array*' => of => 'str*'],
+            tags => ['category:module-selection'],
+            'x.schema.element_entity' => 'dirname',
         },
         include_dist => {
             summary => 'Include all modules of dist',
