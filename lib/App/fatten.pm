@@ -285,7 +285,7 @@ _
             tags => ['category:module-selection'],
             element_completion => {
             },
-            'x.schema.entity' => 'modulename',
+            'x.schema.element_entity' => 'distname',
         },
         exclude => {
             summary => 'Modules to exclude',
@@ -303,7 +303,7 @@ _
                 my %args = @_;
                 Complete::Module::complete_module(word=>$args{word});
             },
-            'x.schema.entity' => 'modulename',
+            'x.schema.element_entity' => 'modulename',
         },
         exclude_pattern => {
             summary => 'Regex patterns of modules to exclude',
@@ -316,7 +316,7 @@ _
             schema => ['array*' => of => 'str*'],
             cmdline_aliases => { p => {} },
             tags => ['category:module-selection'],
-            'x.schema.entity' => 'modulename',
+            'x.schema.element_entity' => 'regex',
         },
         exclude_dist => {
             summary => 'Exclude all modules of dist',
@@ -335,7 +335,7 @@ _
                 my %args = @_;
                 Complete::Dist::complete_dist(word=>$args{word});
             },
-            'x.schema.entity' => 'modulename',
+            'x.schema.element_entity' => 'distname',
         },
         exclude_core => {
             summary => 'Exclude core modules',
@@ -395,7 +395,7 @@ _
                 my %args = @_;
                 Complete::Module::complete_module(word=>$args{word});
             },
-            'x.schema.entity' => 'modulename',
+            'x.schema.element_entity' => 'modulename',
         },
         args => {
             summary => 'Script arguments',
