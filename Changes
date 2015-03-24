@@ -1,5 +1,12 @@
 Revision history for App-fatten
 
+0.29    2015-03-24 (PERLANCAR)
+
+        - Add option: --include-from.
+
+        - Add trace method 'none'.
+
+
 0.28    2015-01-05 (PERLANCAR)
 
 	- No functional changes.
