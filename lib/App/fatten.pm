@@ -19,7 +19,7 @@ use version;
 
 sub _sq {
     require String::ShellQuote;
-    shell_quote($_[0]);
+    String::ShellQuote::shell_quote($_[0]);
 }
 
 our %SPEC;
@@ -49,6 +49,7 @@ sub _trace {
 sub _build_lib {
     require Dist::Util;
     require File::Copy;
+    require File::Find;
     require File::Path;
     require List::MoreUtils;
     require Module::Path::More;
@@ -60,39 +61,53 @@ sub _build_lib {
     my $totsize = 0;
     my $totfiles = 0;
 
-    my @mods; # modules to add
+    my %mods; # modules to add, key=name, val=path
 
     my $deps = $self->{deps};
     for (@$deps) {
         next if $_->{is_core} && $self->{exclude_core};
         next if $_->{is_xs};
         $log->debugf("  Adding module: %s (traced)", $_->{module});
-        push @mods, $_->{module};
+        $mods{$_->{module}} = undef;
     }
 
     for (@{ $self->{include} // [] }) {
         $log->debugf("  Adding module: %s (included)", $_);
-        push @mods, $_;
+        $mods{$_} = undef;
     }
 
     for (@{ $self->{include_dist} // [] }) {
         my @distmods = Dist::Util::list_dist_modules($_);
         if (@distmods) {
             $log->debugf("  Adding modules: %s (included dist)", join(", ", @distmods));
-            push @mods, @distmods;
+            $mods{$_} = undef for @distmods;
         } else {
             $log->debugf("  Adding module: %s (included dist, but can't find other modules)", $_);
-            push @mods, $_;
+            $mods{$_} = undef;
         }
     }
 
-    @mods = uniq(@mods);
+    for (@{ $self->{include_from} // [] }) {
+        $log->debugf("  Adding modules found in: %s", $_);
+        local $CWD = $_;
+        File::Find::find(
+            sub {
+                return unless -f;
+                return unless /\.pm$/i;
+                my $mod = $File::Find::dir eq '.' ? $_ : "$File::Find::dir/$_";
+                $mod =~ s!^\.[/\\]!!;
+                $mod =~ s![/\\]!::!g; $mod =~ s/\.pm$//i;
+                $log->debugf("    Adding module: %s", $mod);
+                $mods{$mod} = "$CWD/$_";
+            }, ".",
+        );
+    }
 
     # filter excluded
     my $excluded_distmods;
-    my @fmods;
+    my %fmods; # filtered mods
   MOD:
-    for my $mod (@mods) {
+    for my $mod (sort keys %mods) {
         if ($self->{exclude} && $mod ~~ @{ $self->{exclude} }) {
             $log->infof("Excluding %s: skipped", $mod);
             next MOD;
@@ -115,12 +130,13 @@ sub _build_lib {
                 next MOD;
             }
         }
-        push @fmods, $mod;
+        $fmods{$mod} = $mods{$mod};
     }
-    @mods = @fmods;
+    %mods = %fmods;
 
-    for my $mod (@mods) {
-        my $mpath = Module::Path::More::module_path(module=>$mod) or die "Can't find path for $mod";
+    for my $mod (sort keys %mods) {
+        my $mpath = $mods{$mod} // Module::Path::More::module_path(module=>$mod);
+        defined $mpath or die "Can't find path for $mod";
 
         my $modp = $mod; $modp =~ s!::!/!g; $modp .= ".pm";
         my ($dir) = $modp =~ m!(.+)/(.+)!;
@@ -266,11 +282,6 @@ _
             schema => ['array*' => of => 'str*'],
             cmdline_aliases => { I=>{} },
             tags => ['category:module-selection'],
-            element_completion => sub {
-                require Complete::Module;
-                my %args = @_;
-                Complete::Module::complete_module(word=>$args{word});
-            },
             'x.schema.element_entity' => 'modulename',
         },
         include_from => {
@@ -292,8 +303,6 @@ _
             schema => ['array*' => of => 'str*'],
             cmdline_aliases => {},
             tags => ['category:module-selection'],
-            element_completion => {
-            },
             'x.schema.element_entity' => 'distname',
         },
         exclude => {
@@ -307,11 +316,6 @@ _
             schema => ['array*' => of => 'str*'],
             cmdline_aliases => { E => {} },
             tags => ['category:module-selection'],
-            element_completion => sub {
-                require Complete::Module;
-                my %args = @_;
-                Complete::Module::complete_module(word=>$args{word});
-            },
             'x.schema.element_entity' => 'modulename',
         },
         exclude_pattern => {
@@ -325,7 +329,7 @@ _
             schema => ['array*' => of => 'str*'],
             cmdline_aliases => { p => {} },
             tags => ['category:module-selection'],
-            'x.schema.element_entity' => 'regex',
+            #'x.schema.element_entity' => 'regex',
         },
         exclude_dist => {
             summary => 'Exclude all modules of dist',
@@ -339,11 +343,6 @@ _
             schema => ['array*' => of => 'str*'],
             cmdline_aliases => {},
             tags => ['category:module-selection'],
-            element_completion => sub {
-                require Complete::Dist;
-                my %args = @_;
-                Complete::Dist::complete_dist(word=>$args{word});
-            },
             'x.schema.element_entity' => 'distname',
         },
         exclude_core => {
@@ -375,7 +374,7 @@ _
             summary => "Which method to use to trace dependencies",
             schema => ['str*', {
                 default => 'fatpacker',
-                in=>$trace_methods,
+                in=>[@$trace_methods, 'none'],
             }],
             description => <<'_',
 
@@ -383,6 +382,9 @@ The default is `fatpacker`, which is the same as what `fatpack trace` does.
 Different tracing methods have different pro's and con's, one method might
 detect required modules that another method does not, and vice versa. There are
 several methods available, please see `App::tracepm` for more details.
+
+A special value of `none` is also provided. If this is selected, then fatten
+will not perform any tracing. Usually used in conjunction with `--include-from`.
 
 _
             cmdline_aliases => { t=>{} },
@@ -399,11 +401,6 @@ Will be passed to the tracer. Will currently only affect the `fatpacker` and
 
 _
             tags => ['category:module-selection'],
-            element_completion => sub {
-                require Complete::Module;
-                my %args = @_;
-                Complete::Module::complete_module(word=>$args{word});
-            },
             'x.schema.element_entity' => 'modulename',
         },
         args => {
@@ -528,7 +525,7 @@ sub fatten {
     my %args = @_;
     my $self = __PACKAGE__->new(%args);
 
-    my $tempdir = tempdir(CLEANUP => 0);
+    my $tempdir = File::Temp::tempdir(CLEANUP => 0);
     $log->debugf("Created tempdir %s", $tempdir);
     $self->{tempdir} = $tempdir;
 
