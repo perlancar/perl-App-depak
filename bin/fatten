@@ -40,13 +40,13 @@ Basic usage (input & output):
 Including and excluding modules:
 
  # add some more modules not detected by the tracer
- % fatten --include Foo::Bar --include Foo::Baz bin/script.pl -o script.fatpack
+ % fatten -I Foo::Bar -I Foo::Baz bin/script.pl -o script.fatpack
 
  # change trace method, usually 'require' will give pretty complete result
  % fatten -t require <script.pl >script.fatpack
 
- # don't trace modules from script, but include all modules found under 'lib'
- % fatten -t none -Ilib bin/script.pl -o script.fatpack
+ # don't trace modules from script, but include all modules found under 'fatlib'
+ % fatten -t none --include-from fatlib bin/script.pl -o script.fatpack
 
 See more options:
 
