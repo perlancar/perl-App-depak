@@ -1,5 +1,13 @@
 Revision history for App-fatten
 
+0.31    2015-04-02 (PERLANCAR)
+
+	- No functional changes.
+
+	- Adjust to DefHash 1.0.9 (rename alt.numnoun.* ->
+	  alt.plurality.*).
+
+
 0.30    2015-03-24 (PERLANCAR)
 
 	- No functional changes.
