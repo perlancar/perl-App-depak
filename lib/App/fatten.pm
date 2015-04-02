@@ -272,7 +272,7 @@ _
         },
         include => {
             summary => 'Include extra modules',
-            'summary.alt.numnoun.singular' => 'Include an extra module',
+            'summary.alt.plurality.singular' => 'Include an extra module',
             description => <<'_',
 
 When the tracing process fails to include a required module, you can add it
@@ -286,7 +286,7 @@ _
         },
         include_from => {
             summary => 'Include extra modules under directories',
-            'summary.alt.numnoun.singular' => 'Include extra modules under a directory',
+            'summary.alt.plurality.singular' => 'Include extra modules under a directory',
             schema => ['array*' => of => 'str*'],
             tags => ['category:module-selection'],
             'x.schema.element_entity' => 'dirname',
@@ -307,7 +307,7 @@ _
         },
         exclude => {
             summary => 'Modules to exclude',
-            'summary.alt.numnoun.singular' => 'Exclude a module',
+            'summary.alt.plurality.singular' => 'Exclude a module',
             description => <<'_',
 
 When you don't want to include a module, specify it here.
@@ -320,7 +320,7 @@ _
         },
         exclude_pattern => {
             summary => 'Regex patterns of modules to exclude',
-            'summary.alt.numnoun.singular' => 'Regex pattern of modules to exclude',
+            'summary.alt.plurality.singular' => 'Regex pattern of modules to exclude',
             description => <<'_',
 
 When you don't want to include a pattern of modules, specify it here.
@@ -392,7 +392,7 @@ _
         },
         use => {
             summary => 'Additional modules to "use"',
-            'summary.alt.numnoun.singular' => 'Additional module to "use"',
+            'summary.alt.plurality.singular' => 'Additional module to "use"',
             schema => ['array*' => of => 'str*'],
             description => <<'_',
 
@@ -405,7 +405,7 @@ _
         },
         args => {
             summary => 'Script arguments',
-            'summary.alt.numnoun.singular' => 'Script argument',
+            'summary.alt.plurality.singular' => 'Script argument',
             description => <<'_',
 
 Will be used when running your script, e.g. when `trace_method` is `require`.
