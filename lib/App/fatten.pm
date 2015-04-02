@@ -346,7 +346,7 @@ _
             'x.schema.element_entity' => 'distname',
         },
         exclude_core => {
-            summary => 'Exclude core modules',
+            summary => 'Whether to exclude core modules',
             'summary.alt.bool.not' => 'Do not exclude core modules',
             schema => ['bool' => default => 1],
             tags => ['category:module-selection'],
@@ -368,6 +368,7 @@ _
         overwrite => {
             schema => [bool => default => 0],
             summary => 'Whether to overwrite output if previously exists',
+            'summary.alt.bool.yes' => 'Overwrite output if previously exists',
             tags => ['category:output'],
         },
         trace_method => {
@@ -430,18 +431,21 @@ _
 
         squish => {
             summary => 'Whether to squish included modules using Perl::Squish',
+            'summary.alt.bool.yes' => 'Squish included modules using Perl::Squish',
             schema => ['bool' => default=>0],
             tags => ['category:stripping'],
         },
 
         strip => {
             summary => 'Whether to strip included modules using Perl::Strip',
+            'summary.alt.bool.yes' => 'Strip included modules using Perl::Strip',
             schema => ['bool' => default=>0],
             tags => ['category:stripping'],
         },
 
         stripper => {
             summary => 'Whether to strip included modules using Perl::Stripper',
+            'summary.alt.bool.yes' => 'Strip included modules using Perl::Stripper',
             schema => ['bool' => default=>0],
             tags => ['category:stripping'],
         },
