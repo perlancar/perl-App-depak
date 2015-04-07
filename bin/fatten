@@ -114,12 +114,10 @@ See L</"CONFIGURATION FILE"> for more details.
 =back
 
 
-=head1 CONFIGURATION FILE
+=head1 append:CONFIGURATION FILE
 
-(Note: configuration file support is via L<Perinci::CmdLine>).
-
-Configuration file is expected to be at C</etc/fatten.conf> or C<~/fatten.conf>
-in the format of L<IOD> (basically INI). You can put a section like this:
+Profiles are also automatically matched to the name of the script being
+processed, if not specified. For example:
 
  [profile=parse-id-phone]
  trace_method=require
@@ -130,12 +128,7 @@ in the format of L<IOD> (basically INI). You can put a section like this:
  include=Text::Table::Tiny
 
 which will automatically be used when you fatten a script named
-C<parse-id-phone>. Or you can select a profile explicitly using
-C<--config-profile> option.
-
-The config parameters are command-line options. The short aliases are not
-recognized, use long names. Dashes (C<->) becomes underscores (C<_>). See
-L<App::fatten> for known options/parameters.
+C<parse-id-phone>.
 
 
 =head1 SEE ALSO
