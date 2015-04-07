@@ -1,5 +1,13 @@
 Revision history for App-fatten
 
+0.32    2015-04-07 (PERLANCAR)
+
+        - No functional changes.
+
+        - [dist] Rebuild with newer Pod::Weaver::Plugin::Rinci for producing
+          Configuration POD section.
+
+
 0.31    2015-04-02 (PERLANCAR)
 
 	- No functional changes.
