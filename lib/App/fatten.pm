@@ -87,7 +87,7 @@ sub _build_lib {
         }
     }
 
-    for (@{ $self->{include_from} // [] }) {
+    for (@{ $self->{include_from_dir} // [] }) {
         $log->debugf("  Adding modules found in: %s", $_);
         local $CWD = $_;
         File::Find::find(
@@ -284,7 +284,7 @@ _
             tags => ['category:module-selection'],
             'x.schema.element_entity' => 'modulename',
         },
-        include_from => {
+        include_from_dir => {
             summary => 'Include extra modules under directories',
             'summary.alt.plurality.singular' => 'Include extra modules under a directory',
             schema => ['array*' => of => 'str*'],
