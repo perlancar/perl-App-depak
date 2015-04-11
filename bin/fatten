@@ -46,7 +46,7 @@ Including and excluding modules:
  % fatten -t require <script.pl >script.fatpack
 
  # don't trace modules from script, but include all modules found under 'fatlib'
- % fatten -t none --include-from fatlib bin/script.pl -o script.fatpack
+ % fatten -t none --include-from-dir fatlib bin/script.pl -o script.fatpack
 
 See more options:
 
