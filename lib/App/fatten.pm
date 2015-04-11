@@ -268,6 +268,39 @@ sub _pack {
                 $self->{abs_output_file}, (-s $self->{abs_output_file})/1024);
 }
 
+sub _test {
+    require Capture::Tiny;
+    require IPC::System::Options;
+
+    my $self = shift;
+    die "Can't test: at least one test case ('--test-case-json') must be specified"
+        unless $self->{test_cases} && @{ $self->{test_cases} };
+
+    my $cases = $self->{test_cases};
+    my $i = 0;
+    for my $case (@$cases) {
+        $i++;
+        $log->debugf("  Test case %d/%d: %s ...", $i, ~~@$cases, $case->{args});
+        my @cmd = ($^X, "-Mlib::core::only", $self->{abs_output_file},
+                   @{ $case->{args} });
+        my $exit;
+        my $output = Capture::Tiny::capture_merged(
+            sub {
+                IPC::System::Options::system({log=>1, shell=>0}, @cmd);
+                $exit = $?;
+            }
+        );
+        my $expected_exit = $case->{exit_code} // 0;
+        if ($exit != $expected_exit) {
+            die "  Test case $i failed: exit code is not $expected_exit ($exit),output: <<$output>>";
+        }
+        if (defined $case->{output_like}) {
+            $output =~ /$case->{output_like}/
+                or die "  Test case $i failed: output does not match $case->{output_like}, output: <<$output>>";
+        }
+    }
+}
+
 sub new {
     my $class = shift;
     bless { @_ }, $class;
@@ -577,6 +610,33 @@ _
             schema => ['bool' => default=>0],
             tags => ['category:debugging'],
         },
+
+        test => {
+            schema => ['bool', is=>1],
+            summary => 'Test the resulting output',
+            cmdline_aliases => {T=>{}},
+            description => <<'_',
+
+Testing is done by running the resulting fatpacked result with `perl
+-Mlib::core::only`. To test, at least one test case is required (see
+`--test-case-json`). Test cases specify what arguments to give to program, what
+exit code we expect, and what the output should contain.
+
+_
+            tags => ['category:testing'],
+        },
+        test_cases => {
+            schema => ['array*', of=>'hash*'],
+            'x.name.is_plural' => 1,
+            description => <<'_',
+
+Example case:
+
+    {"args":["--help"], "exit_code":0, "output_like":"Usage:"}
+
+_
+            tags => ['category:testing'],
+        },
     },
     deps => {
         exec => 'fatpack',
@@ -693,6 +753,11 @@ sub fatten {
             or return [500, "Can't open temporary output file '$self->{abs_output_file}': $!"];
         local $_; print while <$fh>; close $fh;
         unlink $self->{abs_output_file};
+    }
+
+    if ($self->{test}) {
+        $log->infof("Testing ...");
+        $self->_test;
     }
 
     [200];
