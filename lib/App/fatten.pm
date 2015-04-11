@@ -61,29 +61,52 @@ sub _build_lib {
     my $totsize = 0;
     my $totfiles = 0;
 
-    my %mods; # modules to add, key=name, val=path
+    my %mod_paths; # modules to add, key=name, val=path
 
     my $deps = $self->{deps};
     for (@$deps) {
         next if $_->{is_core} && $self->{exclude_core};
         next if $_->{is_xs};
         $log->debugf("  Adding module: %s (traced)", $_->{module});
-        $mods{$_->{module}} = undef;
+        $mod_paths{$_->{module}} = undef;
     }
 
     for (@{ $self->{include} // [] }) {
         $log->debugf("  Adding module: %s (included)", $_);
-        $mods{$_} = undef;
+        $mod_paths{$_} = undef;
     }
 
     for (@{ $self->{include_dist} // [] }) {
         my @distmods = Dist::Util::list_dist_modules($_);
         if (@distmods) {
             $log->debugf("  Adding modules: %s (included dist)", join(", ", @distmods));
-            $mods{$_} = undef for @distmods;
+            $mod_paths{$_} = undef for @distmods;
         } else {
             $log->debugf("  Adding module: %s (included dist, but can't find other modules)", $_);
-            $mods{$_} = undef;
+            $mod_paths{$_} = undef;
+        }
+    }
+
+    if (defined(my $file = $self->{include_from_list})) {
+        $log->debugf("  Adding modules listed in: %s", $file);
+        open my($fh), "<", $file
+            or die "Can't open modules list file '$file': $!";
+        my $linenum = 0;
+        while (my $line = <$fh>) {
+            $linenum++;
+            next unless $line =~ /\S/;
+            $line =~ s/^\s+//;
+            $line =~ s/^(\w+(?:::\w+)*)\s*// or do {
+                warn "Invalid syntax in $file:$linenum: can't find valid module name, skipped\n";
+                next;
+            };
+            my $mod = $1;
+
+            # special handling for scan_prereqs or dist.ini
+            next if $mod eq 'perl';
+
+            $log->debugf("    Adding module: %s", $mod);
+            $mod_paths{$mod} = undef;
         }
     }
 
@@ -98,16 +121,17 @@ sub _build_lib {
                 $mod =~ s!^\.[/\\]!!;
                 $mod =~ s![/\\]!::!g; $mod =~ s/\.pm$//i;
                 $log->debugf("    Adding module: %s", $mod);
-                $mods{$mod} = "$CWD/$_";
+                $mod_paths{$mod} = "$CWD/$_";
             }, ".",
         );
     }
 
     # filter excluded
     my $excluded_distmods;
-    my %fmods; # filtered mods
+    my $excluded_list;
+    my %fmod_paths; # filtered mods
   MOD:
-    for my $mod (sort keys %mods) {
+    for my $mod (sort keys %mod_paths) {
         if ($self->{exclude} && $mod ~~ @{ $self->{exclude} }) {
             $log->infof("Excluding %s: skipped", $mod);
             next MOD;
@@ -130,12 +154,38 @@ sub _build_lib {
                 next MOD;
             }
         }
-        $fmods{$mod} = $mods{$mod};
-    }
-    %mods = %fmods;
+        if (defined(my $file = $self->{exclude_from_list})) {
+            if (!$excluded_list) {
+                $excluded_list = [];
+                $log->debugf("  Reading excludes listed in: %s", $file);
+                open my($fh), "<", $file
+                    or die "Can't open modules list file '$file': $!";
+                my $linenum = 0;
+                while (my $line = <$fh>) {
+                    $linenum++;
+                    next unless $line =~ /\S/;
+                    $line =~ s/^\s+//;
+                    $line =~ s/(\w+(?:::\w+)*)\s*// or do {
+                        warn "Invalid syntax in $file:$linenum: can't find valid module name, skipped\n";
+                        next;
+                    };
+                    my $emod = $1;
+                    $log->debugf("    Adding excluded module: %s", $emod);
+                    push @$excluded_list, $emod;
+                }
+            }
+            if ($mod ~~ @$excluded_list) {
+                $log->infof("Excluding %s (by list): skipped", $mod);
+            }
+        }
 
-    for my $mod (sort keys %mods) {
-        my $mpath = $mods{$mod} // Module::Path::More::module_path(module=>$mod);
+        $fmod_paths{$mod} = $mod_paths{$mod};
+    }
+    %mod_paths = %fmod_paths;
+
+    for my $mod (sort keys %mod_paths) {
+        my $mpath = $mod_paths{$mod} //
+            Module::Path::More::module_path(module=>$mod);
         defined $mpath or die "Can't find path for $mod";
 
         my $modp = $mod; $modp =~ s!::!/!g; $modp .= ".pm";
@@ -284,6 +334,12 @@ _
             tags => ['category:module-selection'],
             'x.schema.element_entity' => 'modulename',
         },
+        include_from_list => {
+            summary => 'Include extra modules from a list in a file',
+            schema => 'str*', # XXX filename
+            tags => ['category:module-selection'],
+            'x.schema.entity' => 'filename',
+        },
         include_from_dir => {
             summary => 'Include extra modules under directories',
             'summary.alt.plurality.singular' => 'Include extra modules under a directory',
@@ -350,6 +406,12 @@ _
             'summary.alt.bool.not' => 'Do not exclude core modules',
             schema => ['bool' => default => 1],
             tags => ['category:module-selection'],
+        },
+        exclude_from_list => {
+            summary => 'Exclude modules from a list in a file',
+            schema => 'str*', # XXX filename
+            tags => ['category:module-selection'],
+            'x.schema.entity' => 'filename',
         },
         perl_version => {
             summary => 'Perl version to target, defaults to current running version',
