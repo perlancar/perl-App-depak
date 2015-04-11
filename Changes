@@ -1,5 +1,13 @@
 Revision history for App-fatten
 
+0.33    2015-04-11 (PERLANCAR)
+
+        - Add options: --include-from-list, --exclude-from-list.
+
+        - [Incompatible change] Rename option --include-from to
+          --include-from-dir (to avoid ambiguity with --include-from-list).
+
+
 0.32    2015-04-07 (PERLANCAR)
 
         - No functional changes.
