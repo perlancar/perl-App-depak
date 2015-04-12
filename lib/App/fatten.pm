@@ -281,12 +281,19 @@ sub _test {
     for my $case (@$cases) {
         $i++;
         $log->debugf("  Test case %d/%d: %s ...", $i, ~~@$cases, $case->{args});
-        my @cmd = ($^X, "-Mlib::core::only", $self->{abs_output_file},
-                   @{ $case->{args} });
+        my %lib_filter_args = ("allow_noncore" => 0);
+        if ($self->{test_allow_use} && @{ $self->{test_allow_use} }) {
+            $lib_filter_args{allow} = join(";", @{ $self->{test_allow_use} });
+        }
+        my @cmd = ($^X, "-Mlib::filter=".join(",",%lib_filter_args),
+                   $self->{abs_output_file}, @{ $case->{args} });
         my $exit;
+        # log statement by IPC::System::Options' log=1 will be eaten by
+        # Capture::Tiny, so we log here
+        $log->tracef("cmd: %s", \@cmd);
         my $output = Capture::Tiny::capture_merged(
             sub {
-                IPC::System::Options::system({log=>1, shell=>0}, @cmd);
+                IPC::System::Options::system({log=>0, shell=>0}, @cmd);
                 $exit = $?;
             }
         );
@@ -623,6 +630,10 @@ Testing is done by running the resulting fatpacked result with `perl
 exit code we expect, and what the output should contain.
 
 _
+            tags => ['category:testing'],
+        },
+        test_allow_use => {
+            schema => ['array*', of=>'str*'],
             tags => ['category:testing'],
         },
         test_cases => {
