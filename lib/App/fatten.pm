@@ -87,7 +87,7 @@ sub _build_lib {
         }
     }
 
-    if (defined(my $file = $self->{include_from_list})) {
+    if (defined(my $file = $self->{include_list})) {
         $log->debugf("  Adding modules listed in: %s", $file);
         open my($fh), "<", $file
             or die "Can't open modules list file '$file': $!";
@@ -110,7 +110,7 @@ sub _build_lib {
         }
     }
 
-    for (@{ $self->{include_from_dir} // [] }) {
+    for (@{ $self->{include_dir} // [] }) {
         $log->debugf("  Adding modules found in: %s", $_);
         local $CWD = $_;
         File::Find::find(
@@ -367,13 +367,13 @@ _
             tags => ['category:module-selection'],
             'x.schema.element_entity' => 'modulename',
         },
-        include_from_list => {
+        include_list => {
             summary => 'Include extra modules from a list in a file',
             schema => 'str*', # XXX filename
             tags => ['category:module-selection'],
             'x.schema.entity' => 'filename',
         },
-        include_from_dir => {
+        include_dir => {
             summary => 'Include extra modules under directories',
             'summary.alt.plurality.singular' => 'Include extra modules under a directory',
             schema => ['array*' => of => 'str*'],
