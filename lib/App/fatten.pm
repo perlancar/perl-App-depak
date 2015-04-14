@@ -67,6 +67,7 @@ sub _trace {
         method => $self->{trace_method},
         script => $self->{input_file},
         args => $self->{args},
+        (multiple_args => $self->{multiple_args}) x !!$self->{multiple_args},
         use => $self->{use},
         recurse_exclude_core => $self->{exclude_core} ? 1:0,
         detail => 1,
@@ -591,9 +592,9 @@ _
             'summary.alt.plurality.singular' => 'Script argument',
             description => <<'_',
 
-Will be used when running your script, e.g. when `trace_method` is `require`.
-For example, if your script requires three arguments: `--foo`, `2`, `"bar baz"`
-then you can either use:
+Will be used when running your script, e.g. when `trace_method` is `fatpacker`
+or `require`. For example, if your script requires three arguments: `--foo`,
+`2`, `"bar baz"` then you can either use:
 
     % fatten script output --args --foo --args 2 --args "bar baz"
 
@@ -603,6 +604,17 @@ or:
 
 _
             schema => ['array*' => of => 'str*'],
+        },
+        multiple_args => {
+            summary => 'Sets of script arguments',
+            description => <<'_',
+
+Alternative to `args`, currently can be used when `trace_method` is `require`.
+This will run script multiple times, each with a set of arguments. Can be used
+to reach multiple run pathways and trace more modules.
+
+_
+            schema => ['array*' => of => ['array*', of=>'str*']],
         },
 
         shebang => {
