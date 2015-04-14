@@ -16,6 +16,8 @@ use File::chdir;
 use File::Slurper qw(write_text read_text);
 use version;
 
+my @ALLOW_XS = qw(List::MoreUtils version::vxs);
+
 sub __sq {
     require String::ShellQuote;
     String::ShellQuote::shell_quote($_[0]);
@@ -81,6 +83,8 @@ sub _trace {
 }
 
 sub _build_lib {
+    use experimental 'smartmatch';
+
     require Dist::Util;
     require File::Copy;
     require File::Find;
@@ -227,7 +231,10 @@ sub _build_lib {
 
         unless ($mpath) {
             if (Module::XSOrPP::is_xs($mod)) {
-                die "Can't add XS module: $mod\n";
+                unless (!$self->{allow_xs} || $mod ~~ @{ $self->{allow_xs} } ||
+                            $mod ~~ @ALLOW_XS) {
+                    die "Can't add XS module: $mod\n";
+                }
             }
         }
 
@@ -560,6 +567,10 @@ is available.
 
 _
             tags => ['category:module-selection'],
+        },
+        allow_xs => {
+            'summary.alt.plurality.singular' => 'Allow adding a specified XS module',
+            schema => ['array*', of=>'str*'],
         },
         use => {
             summary => 'Additional modules to "use"',
