@@ -16,7 +16,7 @@ use File::chdir;
 use File::Slurper qw(write_text read_text);
 use version;
 
-sub _sq {
+sub __sq {
     require String::ShellQuote;
     String::ShellQuote::shell_quote($_[0]);
 }
@@ -250,8 +250,8 @@ sub _pack {
     system join(
         "",
         "fatpack file ",
-        _sq($self->{abs_input_file}), " > ",
-        _sq($self->{abs_output_file}),
+        __sq($self->{abs_input_file}), " > ",
+        __sq($self->{abs_output_file}),
     );
     die "Can't fatpack file: ".Proc::ChildError::explain_child_error() if $?;
 
