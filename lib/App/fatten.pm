@@ -559,8 +559,8 @@ module. The distribution of that module and the recursive dependencies for _that
 distribution_ will be retrieved recursively using `lcpan`. All these will be
 excluded from being fatpacked.
 
-This option can be used to express dependency to an XS module, since a script
-cannot fatpack XS modules.
+This option can be used to express dependency to an XS module, since XS modules
+cannot be fatpacked.
 
 This option requires that `lcpan` is installed and a fairly recent lcpan index
 is available.
