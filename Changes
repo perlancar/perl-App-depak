@@ -1,6 +1,17 @@
 Revision history for App-fatten
 
+0.35    2015-04-15 (PERLANCAR)
+
+        - Add option: --allow-xs.
+
+
 0.34    2015-04-15 (PERLANCAR)
+
+        - fatten now dies when you try to add XS modules (instead of skipping
+          them silently and your fattened script fails to run later). You now
+          either have to use --allow-dep (UPDATE: or --allow-xs, if you know
+          that the XS module will run because it has a PP fallback, e.g.
+          List::MoreUtils).
 
         - Add options: --allow-dep, --trace-extra-opts, --test, --test-case.
 
