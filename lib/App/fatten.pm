@@ -11,8 +11,7 @@ use Log::Any '$log';
 use Log::Any::For::Builtins qw(system my_qx);
 BEGIN { no warnings; $main::Log_Level = 'info' }
 
-use App::tracepm ();
-
+use App::tracepm (); # we need list of trace methods too so we load early
 use File::chdir;
 use File::Slurper qw(write_text read_text);
 use version;
@@ -30,7 +29,7 @@ sub _trace {
     return if $self->{trace_method} eq 'none';
 
     $log->debugf("  Tracing with method '%s' ...", $self->{trace_method});
-    my $res = App::tracepm::tracepm(
+    my %traceargs = (
         method => $self->{trace_method},
         script => $self->{input_file},
         args => $self->{args},
@@ -38,10 +37,15 @@ sub _trace {
         recurse_exclude_core => $self->{exclude_core} ? 1:0,
         recurse_exclude_xs   => 1,
         detail => 1,
+        trap_script_output => 1,
 
         core => $self->{exclude_core} ? 0 : undef,
         xs   => 0,
+        ($self->{trace_extra_opts} ? %{$self->{trace_extra_opts}} : ()),
     );
+
+    $log->debugf("  tracepm args: %s", \%traceargs);
+    my $res = App::tracepm::tracepm(%traceargs);
     die "Can't trace: $res->[0] - $res->[1]" unless $res->[0] == 200;
     $self->{deps} = $res->[2];
 }
@@ -283,7 +287,7 @@ sub _test {
         $log->debugf("  Test case %d/%d: %s ...", $i, ~~@$cases, $case->{args});
         my @cmd = ($^X);
         push @cmd, @{ $case->{perl_args} } if $case->{perl_args} && @{ $case->{perl_args} };
-        push @cmd, $self->{abs_output_file}, @{ $case->{args} });
+        push @cmd, $self->{abs_output_file}, @{ $case->{args} };
         my $exit;
         # log statement by IPC::System::Options' log=1 will be eaten by
         # Capture::Tiny, so we log here
@@ -488,6 +492,11 @@ will not perform any tracing. Usually used in conjunction with `--include-from`.
 
 _
             cmdline_aliases => { t=>{} },
+            tags => ['category:module-selection'],
+        },
+        trace_extra_opts => {
+            schema => ['hash*'],
+            summary => 'Pass more options to `App::tracepm`',
             tags => ['category:module-selection'],
         },
         use => {
