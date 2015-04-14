@@ -67,7 +67,7 @@ sub _trace {
         method => $self->{trace_method},
         script => $self->{input_file},
         args => $self->{args},
-        (multiple_args => $self->{multiple_args}) x !!$self->{multiple_args},
+        (multiple_runs => $self->{multiple_runs}) x !!$self->{multiple_runs},
         use => $self->{use},
         recurse_exclude_core => $self->{exclude_core} ? 1:0,
         detail => 1,
@@ -605,16 +605,9 @@ or:
 _
             schema => ['array*' => of => 'str*'],
         },
-        multiple_args => {
-            summary => 'Sets of script arguments',
-            description => <<'_',
-
-Alternative to `args`, currently can be used when `trace_method` is `require`.
-This will run script multiple times, each with a set of arguments. Can be used
-to reach multiple run pathways and trace more modules.
-
-_
-            schema => ['array*' => of => ['array*', of=>'str*']],
+        multiple_runs => {
+            summary => 'Pass to tracepm',
+            schema => ['array*' => of => ['hash*']],
         },
 
         shebang => {
