@@ -1,5 +1,13 @@
 Revision history for App-fatten
 
+0.36    2015-04-15 (PERLANCAR)
+
+	- Adjust to App::tracepm 0.17 (replace --multiple-args with
+	  --multiple-runs).
+
+	- Add option --multiple-args.
+
+
 0.35    2015-04-15 (PERLANCAR)
 
         - Add option: --allow-xs.
