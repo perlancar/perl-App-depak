@@ -21,6 +21,38 @@ sub __sq {
     String::ShellQuote::shell_quote($_[0]);
 }
 
+sub _run_lcpan {
+    require IPC::System::Options;
+    require JSON;
+
+    my $self = shift;
+
+    state $checked;
+    unless ($checked) {
+        require File::Which;
+        File::Which::which("lcpan")
+            or die "lcpan is not available, please install it first\n";
+        my $res = IPC::System::Options::backtick(
+            {die=>1, log=>1}, "lcpan", "stats", "--json", "--no-naked-res");
+        $res = JSON::decode_json($res);
+        die "Can't 'lcpan stat': $res->[0] - $res->[1]\n"
+            unless $res->[0] == 200;
+        my $stats = $res->[2];
+        if ((time - $stats->{raw_last_index_time}) > 5*86400) {
+            die "lcpan index is over 5 days old, please refresh it first ".
+                "with 'lcpan update'\n";
+        }
+    }
+
+    my @lcpan_args = (@_, "--json", "--no-naked-res");
+    my $res = IPC::System::Options::backtick(
+        {die=>1, log=>1}, "lcpan", @lcpan_args);
+    $res = JSON::decode_json($res);
+    die "Can't 'lcpan ".join(" ", @lcpan_args)."': $res->[0] - $res->[1]\n"
+        unless $res->[0] == 200;
+    $res->[2];
+}
+
 our %SPEC;
 
 sub _trace {
@@ -35,18 +67,16 @@ sub _trace {
         args => $self->{args},
         use => $self->{use},
         recurse_exclude_core => $self->{exclude_core} ? 1:0,
-        recurse_exclude_xs   => 1,
         detail => 1,
         trap_script_output => 1,
 
         core => $self->{exclude_core} ? 0 : undef,
-        xs   => 0,
         ($self->{trace_extra_opts} ? %{$self->{trace_extra_opts}} : ()),
     );
 
     $log->debugf("  tracepm args: %s", \%traceargs);
     my $res = App::tracepm::tracepm(%traceargs);
-    die "Can't trace: $res->[0] - $res->[1]" unless $res->[0] == 200;
+    die "Can't trace: $res->[0] - $res->[1]\n" unless $res->[0] == 200;
     $self->{deps} = $res->[2];
 }
 
@@ -70,7 +100,6 @@ sub _build_lib {
     my $deps = $self->{deps};
     for (@$deps) {
         next if $_->{is_core} && $self->{exclude_core};
-        next if $_->{is_xs};
         $log->debugf("  Adding module: %s (traced)", $_->{module});
         $mod_paths{$_->{module}} = undef;
     }
@@ -94,7 +123,7 @@ sub _build_lib {
     if (defined(my $file = $self->{include_list})) {
         $log->debugf("  Adding modules listed in: %s", $file);
         open my($fh), "<", $file
-            or die "Can't open modules list file '$file': $!";
+            or die "Can't open modules list file '$file': $!\n";
         my $linenum = 0;
         while (my $line = <$fh>) {
             $linenum++;
@@ -136,6 +165,11 @@ sub _build_lib {
     my %fmod_paths; # filtered mods
   MOD:
     for my $mod (sort keys %mod_paths) {
+        if ($self->{_exclude_deps} && $self->{_exclude_deps}{$mod}) {
+            $log->infof("Excluding %s: skipped by allow_dep %s", $mod, $self->{_exclude_deps}{$mod});
+            next MOD;
+        }
+
         if ($self->{exclude} && $mod ~~ @{ $self->{exclude} }) {
             $log->infof("Excluding %s: skipped", $mod);
             next MOD;
@@ -163,7 +197,7 @@ sub _build_lib {
                 $excluded_list = [];
                 $log->debugf("  Reading excludes listed in: %s", $file);
                 open my($fh), "<", $file
-                    or die "Can't open modules list file '$file': $!";
+                    or die "Can't open modules list file '$file': $!\n";
                 my $linenum = 0;
                 while (my $line = <$fh>) {
                     $linenum++;
@@ -187,17 +221,25 @@ sub _build_lib {
     }
     %mod_paths = %fmod_paths;
 
+    require Module::XSOrPP;
     for my $mod (sort keys %mod_paths) {
-        my $mpath = $mod_paths{$mod} //
-            Module::Path::More::module_path(module=>$mod);
-        defined $mpath or die "Can't find path for $mod";
+        my $mpath = $mod_paths{$mod};
+
+        unless ($mpath) {
+            if (Module::XSOrPP::is_xs($mod)) {
+                die "Can't add XS module: $mod\n";
+            }
+        }
+
+        $mpath //= Module::Path::More::module_path(module=>$mod);
+        defined $mpath or die "Can't find path for $mod\n";
 
         my $modp = $mod; $modp =~ s!::!/!g; $modp .= ".pm";
         my ($dir) = $modp =~ m!(.+)/(.+)!;
         if ($dir) {
             my $dir_to_make = "$tempdir/lib/$dir";
             unless (-d $dir_to_make) {
-                File::Path::make_path($dir_to_make) or die "Can't make_path: $dir_to_make";
+                File::Path::make_path($dir_to_make) or die "Can't make_path: $dir_to_make\n";
             }
         }
 
@@ -253,7 +295,7 @@ sub _pack {
         __sq($self->{abs_input_file}), " > ",
         __sq($self->{abs_output_file}),
     );
-    die "Can't fatpack file: ".Proc::ChildError::explain_child_error() if $?;
+    die "Can't fatpack file: ".Proc::ChildError::explain_child_error()."\n" if $?;
 
     chmod 0755, $self->{abs_output_file};
 
@@ -277,7 +319,7 @@ sub _test {
     require IPC::System::Options;
 
     my $self = shift;
-    die "Can't test: at least one test case ('--test-case-json') must be specified"
+    die "Can't test: at least one test case ('--test-case-json') must be specified\n"
         unless $self->{test_cases} && @{ $self->{test_cases} };
 
     my $cases = $self->{test_cases};
@@ -300,11 +342,11 @@ sub _test {
         );
         my $expected_exit = $case->{exit_code} // 0;
         if ($exit != $expected_exit) {
-            die "  Test case $i failed: exit code is not $expected_exit ($exit),output: <<$output>>";
+            die "  Test case $i failed: exit code is not $expected_exit ($exit),output: <<$output>>\n";
         }
         if (defined $case->{output_like}) {
             $output =~ /$case->{output_like}/
-                or die "  Test case $i failed: output does not match $case->{output_like}, output: <<$output>>";
+                or die "  Test case $i failed: output does not match $case->{output_like}, output: <<$output>>\n";
         }
     }
 }
@@ -499,6 +541,26 @@ _
             summary => 'Pass more options to `App::tracepm`',
             tags => ['category:module-selection'],
         },
+        allow_deps => {
+            'summary.alt.plurality.singular' => 'Allow script to depend on a module instead of fatpacking it',
+            schema => ['array*', of=>'str*'],
+            'x.name.is_plural' => 1,
+            description => <<'_',
+
+This option can be used to express that script will depend on a specified
+module. The distribution of that module and the recursive dependencies for _that
+distribution_ will be retrieved recursively using `lcpan`. All these will be
+excluded from being fatpacked.
+
+This option can be used to express dependency to an XS module, since a script
+cannot fatpack XS modules.
+
+This option requires that `lcpan` is installed and a fairly recent lcpan index
+is available.
+
+_
+            tags => ['category:module-selection'],
+        },
         use => {
             summary => 'Additional modules to "use"',
             'summary.alt.plurality.singular' => 'Additional module to "use"',
@@ -514,6 +576,7 @@ _
         },
         args => {
             summary => 'Script arguments',
+            'x.name.is_plural' => 1,
             'summary.alt.plurality.singular' => 'Script argument',
             description => <<'_',
 
@@ -667,6 +730,24 @@ sub fatten {
 
     my %args = @_;
     my $self = __PACKAGE__->new(%args);
+
+    if ($self->{allow_deps} && @{ $self->{allow_deps} }) {
+        my %exclude_deps;
+        for my $dep (@{ $self->{allow_deps} }) {
+            my @dep_mods = ($dep);
+            my $res = $self->_run_lcpan("deps", "-R", $dep);
+            for my $ent (@{ $res }) {
+                $ent->{module} =~ s/^\s+//;
+                push @dep_mods, $ent->{module};
+            }
+            $res = $self->_run_lcpan("mods-from-same-dist", @dep_mods);
+            for my $ent (@{ $res }) {
+                $log->debugf("  Adding to exclude_deps: %s (allow_dep %s)", $ent, $dep);
+                $exclude_deps{$ent} = $dep;
+            }
+        }
+        $self->{_exclude_deps} = \%exclude_deps;
+    }
 
     my $tempdir = File::Temp::tempdir(CLEANUP => 0);
     $log->debugf("Created tempdir %s", $tempdir);
