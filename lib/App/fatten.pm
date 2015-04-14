@@ -158,7 +158,7 @@ sub _build_lib {
                 next MOD;
             }
         }
-        if (defined(my $file = $self->{exclude_from_list})) {
+        if (defined(my $file = $self->{exclude_list})) {
             if (!$excluded_list) {
                 $excluded_list = [];
                 $log->debugf("  Reading excludes listed in: %s", $file);
@@ -448,7 +448,7 @@ _
             schema => ['bool' => default => 1],
             tags => ['category:module-selection'],
         },
-        exclude_from_list => {
+        exclude_list => {
             summary => 'Exclude modules from a list in a file',
             schema => 'str*', # XXX filename
             tags => ['category:module-selection'],
