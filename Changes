@@ -1,5 +1,18 @@
 Revision history for App-fatten
 
+0.34    2015-04-15 (PERLANCAR)
+
+        - Add options: --allow-dep, --trace-extra-opts, --test, --test-case.
+
+        - Use tracepm's trap_script_output option to silence script's output
+          when being traced with 'fatpacker' or 'require' method.
+
+        - [Incompatible change] Rename --exclude-from-list to --exclude-list,
+          --include-from-dir to --include-dir, --include-from-list to
+          --include-list (remove superfluous 'from', as well as be more consistent
+          with --include-dist.
+
+
 0.33    2015-04-11 (PERLANCAR)
 
         - Add options: --include-from-list, --exclude-from-list.

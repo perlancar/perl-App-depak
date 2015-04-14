@@ -701,10 +701,6 @@ exit code we expect, and what the output should contain.
 _
             tags => ['category:testing'],
         },
-        test_allow_use => {
-            schema => ['array*', of=>'str*'],
-            tags => ['category:testing'],
-        },
         test_cases => {
             schema => ['array*', of=>'hash*'],
             'x.name.is_plural' => 1,
