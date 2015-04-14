@@ -281,12 +281,9 @@ sub _test {
     for my $case (@$cases) {
         $i++;
         $log->debugf("  Test case %d/%d: %s ...", $i, ~~@$cases, $case->{args});
-        my %lib_filter_args = ("allow_noncore" => 0);
-        if ($self->{test_allow_use} && @{ $self->{test_allow_use} }) {
-            $lib_filter_args{allow} = join(";", @{ $self->{test_allow_use} });
-        }
-        my @cmd = ($^X, "-Mlib::filter=".join(",",%lib_filter_args),
-                   $self->{abs_output_file}, @{ $case->{args} });
+        my @cmd = ($^X);
+        push @cmd, @{ $case->{perl_args} } if $case->{perl_args} && @{ $case->{perl_args} };
+        push @cmd, $self->{abs_output_file}, @{ $case->{args} });
         my $exit;
         # log statement by IPC::System::Options' log=1 will be eaten by
         # Capture::Tiny, so we log here
@@ -643,7 +640,7 @@ _
 
 Example case:
 
-    {"args":["--help"], "exit_code":0, "output_like":"Usage:"}
+    {"args":["--help"], "exit_code":0, "perl_args":["-Mlib::core::only"], "output_like":"Usage:"}
 
 _
             tags => ['category:testing'],
