@@ -636,7 +636,9 @@ _
         },
         skip_not_found => {
             summary => 'Instead of dying, skip when module to add is not found',
+            'summary.alt.bool.not' => 'Instead of skipping, die when module to add is not found',
             schema => ['bool'],
+            default => 1,
             description => <<'_',
 
 This option is useful when you use `include_prereq`, because modules without its
