@@ -12,7 +12,7 @@ BEGIN { no warnings; $main::Log_Level = 'info' }
 
 use App::tracepm (); # we need list of trace methods too so we load early
 use File::chdir;
-use File::Slurper qw(write_text read_text);
+use File::Slurper qw(write_binary read_binary);
 use version;
 
 my @ALLOW_XS = qw(List::MoreUtils version::vxs);
@@ -187,7 +187,8 @@ sub _build_lib {
     my $excluded_list;
     my $excluded_prereqs;
     my %fmod_paths; # filtered mods
-  MOD:
+
+  MOD_TO_FILTER:
     for my $mod (sort keys %mod_paths) {
         if ($self->{exclude_prereq} && @{ $self->{exclude_prereq} }) {
             if (!$excluded_prereqs) {
@@ -210,18 +211,18 @@ sub _build_lib {
             }
             if ($excluded_prereqs->{$mod}) {
                 $log->infof("Excluding %s: skipped by exclude_prereq %s", $mod, $excluded_prereqs->{$mod});
-                next MOD;
+                next MOD_TO_FILTER;
             }
         }
 
         if ($self->{exclude} && $mod ~~ @{ $self->{exclude} }) {
             $log->infof("Excluding %s: skipped", $mod);
-            next MOD;
+            next MOD_TO_FILTER;
         }
         for (@{ $self->{exclude_pattern} // [] }) {
             if ($mod ~~ /$_/) {
                 $log->infof("Excluding %s: skipped by pattern %s", $mod, $_);
-                next MOD;
+                next MOD_TO_FILTER;
             }
         }
         if ($self->{exclude_dist}) {
@@ -233,7 +234,7 @@ sub _build_lib {
             }
             if ($mod ~~ @$excluded_distmods) {
                 $log->infof("Excluding %s (by dist): skipped", $mod);
-                next MOD;
+                next MOD_TO_FILTER;
             }
         }
         if (defined(my $file = $self->{exclude_list})) {
@@ -266,6 +267,8 @@ sub _build_lib {
     %mod_paths = %fmod_paths;
 
     require Module::XSOrPP;
+
+  MOD_TO_ADD:
     for my $mod (sort keys %mod_paths) {
         my $mpath = $mod_paths{$mod};
 
@@ -279,7 +282,14 @@ sub _build_lib {
         }
 
         $mpath //= Module::Path::More::module_path(module=>$mod);
-        defined $mpath or die "Can't find path for $mod\n";
+        unless (defined $mpath) {
+            if ($self->{skip_not_found}) {
+                $log->infof("Path for module '%s' not found, skipped", $mod);
+                next MOD_TO_ADD;
+            } else {
+                die "Can't find path for $mod\n";
+            }
+        }
 
         my $modp = $mod; $modp =~ s!::!/!g; $modp .= ".pm";
         my ($dir) = $modp =~ m!(.+)/(.+)!;
@@ -302,16 +312,16 @@ sub _build_lib {
                 );
             };
             $log->debug("  Stripping $mpath --> $modp ...");
-            my $src = read_text($mpath);
+            my $src = read_binary($mpath);
             my $stripped = $stripper->strip($src);
-            write_text("$tempdir/lib/$modp", $stripped);
+            write_binary("$tempdir/lib/$modp", $stripped);
         } elsif ($self->{strip}) {
             require Perl::Strip;
             my $strip = Perl::Strip->new;
             $log->debug("  Stripping $mpath --> $modp ...");
-            my $src = read_text($mpath);
+            my $src = read_binary($mpath);
             my $stripped = $strip->strip($src);
-            write_text("$tempdir/lib/$modp", $stripped);
+            write_binary("$tempdir/lib/$modp", $stripped);
         } elsif ($self->{squish}) {
             $log->debug("  Squishing $mpath --> $modp ...");
             require Perl::Squish;
@@ -348,12 +358,12 @@ sub _pack {
     # replace shebang line (which contains perl path used by fatpack) with a
     # default system perl. perhaps make this configurable in the future.
     {
-        my $ct = read_text($self->{abs_output_file});
+        my $ct = read_binary($self->{abs_output_file});
         my $shebang = $self->{shebang} // '#!/usr/bin/perl';
         $shebang = "#!$shebang" unless $shebang =~ /^#!/;
         $shebang =~ s/\R+//g;
         $ct =~ s{\A#!(.+)}{$shebang};
-        write_text($self->{abs_output_file}, $ct);
+        write_binary($self->{abs_output_file}, $ct);
     }
 
     $log->infof("  Produced %s (%.1f KB)",
@@ -620,6 +630,18 @@ cannot be fatpacked.
 To query dependencies, a local CPAN index is used for querying speed. Thus, this
 option requires that `lcpan` is installed and a fairly recent lcpan index is
 available.
+
+_
+            tags => ['category:module-selection'],
+        },
+        skip_not_found => {
+            summary => 'Instead of dying, skip when module to add is not found',
+            schema => ['bool'],
+            description => <<'_',
+
+This option is useful when you use `include_prereq`, because modules without its
+own .pm files will also be included (CPAN indexes packages, including those that
+do not have their own .pm files).
 
 _
             tags => ['category:module-selection'],
