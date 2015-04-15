@@ -1,5 +1,14 @@
 Revision history for App-fatten
 
+0.37    2015-04-15 (PERLANCAR)
+
+        - Add option: --skip-not-found (set by default).
+
+        - Add option: --include-prereq.
+
+        - [Incompatible change] Rename option --allow-dep to --exclude-prereq.
+
+
 0.36    2015-04-15 (PERLANCAR)
 
 	- Adjust to App::tracepm 0.17 (replace --multiple-args with
@@ -22,6 +31,7 @@ Revision history for App-fatten
           List::MoreUtils).
 
         - Add options: --allow-dep, --trace-extra-opts, --test, --test-case.
+          UPDATE: --allow-dep is now renamed to --exclude-prereq.
 
         - Use tracepm's trap_script_output option to silence script's output
           when being traced with 'fatpacker' or 'require' method.
