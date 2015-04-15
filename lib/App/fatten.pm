@@ -102,10 +102,29 @@ sub _build_lib {
     my %mod_paths; # modules to add, key=name, val=path
 
     my $deps = $self->{deps};
-    for (@$deps) {
+    for (@{$deps // []}) {
         next if $_->{is_core} && $self->{exclude_core};
         $log->debugf("  Adding module: %s (traced)", $_->{module});
         $mod_paths{$_->{module}} = undef;
+    }
+
+    if ($self->{include_prereq} && @{ $self->{include_prereq} }) {
+        $log->infof("Searching recursive prereqs to add into fatpacking: %s", $self->{include_prereq});
+        for my $prereq (@{ $self->{include_prereq} }) {
+            my @mods = ($prereq);
+            # find prereq's dependencies
+            my $res = $self->_run_lcpan("deps", "-R", $prereq);
+            for my $entry (@{ $res }) {
+                $entry->{module} =~ s/^\s+//;
+                push @mods, $entry->{module};
+            }
+            # pull all the other modules from the same dists
+            $res = $self->_run_lcpan("mods-from-same-dist", "--detail", @mods);
+            for my $entry (@{ $res }) {
+                $log->debugf("  Adding module: %s (include_prereq %s, dist %s)", $entry->{name}, $prereq, $entry->{dist});
+                $mod_paths{$entry->{name}} = undef;
+            }
+        }
     }
 
     for (@{ $self->{include} // [] }) {
@@ -166,12 +185,33 @@ sub _build_lib {
     # filter excluded
     my $excluded_distmods;
     my $excluded_list;
+    my $excluded_prereqs;
     my %fmod_paths; # filtered mods
   MOD:
     for my $mod (sort keys %mod_paths) {
-        if ($self->{_exclude_deps} && $self->{_exclude_deps}{$mod}) {
-            $log->infof("Excluding %s: skipped by allow_dep %s", $mod, $self->{_exclude_deps}{$mod});
-            next MOD;
+        if ($self->{exclude_prereq} && @{ $self->{exclude_prereq} }) {
+            if (!$excluded_prereqs) {
+                $excluded_prereqs = {};
+                $log->infof("Searching recursive prereqs to exclude from fatpacking: %s", $self->{exclude_prereq});
+                for my $prereq (@{ $self->{exclude_prereq} }) {
+                    my @mods = ($prereq);
+                    # find prereq's dependencies
+                    my $res = $self->_run_lcpan("deps", "-R", $prereq);
+                    for my $entry (@{ $res }) {
+                        $entry->{module} =~ s/^\s+//;
+                        push @mods, $entry->{module};
+                    }
+                    # pull all the other modules from the same dists
+                    $res = $self->_run_lcpan("mods-from-same-dist", "--detail", @mods);
+                    for my $entry (@{ $res }) {
+                        $excluded_prereqs->{$entry->{name}} = $prereq;
+                    }
+                }
+            }
+            if ($excluded_prereqs->{$mod}) {
+                $log->infof("Excluding %s: skipped by exclude_prereq %s", $mod, $excluded_prereqs->{$mod});
+                next MOD;
+            }
         }
 
         if ($self->{exclude} && $mod ~~ @{ $self->{exclude} }) {
@@ -547,22 +587,39 @@ _
             summary => 'Pass more options to `App::tracepm`',
             tags => ['category:module-selection'],
         },
-        allow_deps => {
+        include_prereq => {
+            'summary.alt.plurality.singular' => 'Include module and its recursive dependencies for fatpacking',
+            schema => ['array*', of=>'str*'],
+            description => <<'_',
+
+This option can be used to include a module, as well as other modules in the
+same distribution as that module, as well as the distribution's recursive
+dependencies, for fatpacking. Dependencies will be searched using a local CPAN
+index. This is a convenient alternative to tracing a module. So you might want
+to use this option together with setting `trace_method` to `none`.
+
+This option requires that `lcpan` is installed and a fairly recent lcpan index
+is available.
+
+_
+            tags => ['category:module-selection'],
+        },
+        exclude_prereq => {
             'summary.alt.plurality.singular' => 'Allow script to depend on a module instead of fatpacking it',
             schema => ['array*', of=>'str*'],
-            'x.name.is_plural' => 1,
             description => <<'_',
 
 This option can be used to express that script will depend on a specified
-module. The distribution of that module and the recursive dependencies for _that
-distribution_ will be retrieved recursively using `lcpan`. All these will be
-excluded from being fatpacked.
+module, instead of including it fatpacked. The prereq-ed module, as well as
+other modules in the same distribution, as well as its prereqs and so on
+recursively, will be excluded from fatpacking as well.
 
 This option can be used to express dependency to an XS module, since XS modules
 cannot be fatpacked.
 
-This option requires that `lcpan` is installed and a fairly recent lcpan index
-is available.
+To query dependencies, a local CPAN index is used for querying speed. Thus, this
+option requires that `lcpan` is installed and a fairly recent lcpan index is
+available.
 
 _
             tags => ['category:module-selection'],
@@ -741,24 +798,6 @@ sub fatten {
     my %args = @_;
     my $self = __PACKAGE__->new(%args);
 
-    if ($self->{allow_deps} && @{ $self->{allow_deps} }) {
-        my %exclude_deps;
-        for my $dep (@{ $self->{allow_deps} }) {
-            my @dep_mods = ($dep);
-            my $res = $self->_run_lcpan("deps", "-R", $dep);
-            for my $ent (@{ $res }) {
-                $ent->{module} =~ s/^\s+//;
-                push @dep_mods, $ent->{module};
-            }
-            $res = $self->_run_lcpan("mods-from-same-dist", @dep_mods);
-            for my $ent (@{ $res }) {
-                $log->debugf("  Adding to exclude_deps: %s (allow_dep %s)", $ent, $dep);
-                $exclude_deps{$ent} = $dep;
-            }
-        }
-        $self->{_exclude_deps} = \%exclude_deps;
-    }
-
     my $tempdir = File::Temp::tempdir(CLEANUP => 0);
     $log->debugf("Created tempdir %s", $tempdir);
     $self->{tempdir} = $tempdir;
@@ -837,8 +876,10 @@ sub fatten {
     $self->{abs_output_file} //= Cwd::abs_path($output_file) or return
         [500, "Can't find absolute path of output file '$self->{output_file}'"];
 
-    $log->infof("Tracing dependencies ...");
-    $self->_trace;
+    unless ($self->{trace_method} eq 'none') {
+        $log->infof("Tracing dependencies ...");
+        $self->_trace;
+    }
 
     $log->infof("Building lib/ ...");
     $self->_build_lib;
