@@ -113,7 +113,7 @@ sub _build_lib {
         for my $prereq (@{ $self->{include_prereq} }) {
             my @mods = ($prereq);
             # find prereq's dependencies
-            my $res = $self->_run_lcpan("deps", "-R", $prereq);
+            my $res = $self->_run_lcpan("deps", "-R", "--perl-version", $self->{perl_version}->numify, $prereq);
             for my $entry (@{ $res }) {
                 $entry->{module} =~ s/^\s+//;
                 push @mods, $entry->{module};
@@ -196,7 +196,7 @@ sub _build_lib {
                 for my $prereq (@{ $self->{exclude_prereq} }) {
                     my @mods = ($prereq);
                     # find prereq's dependencies
-                    my $res = $self->_run_lcpan("deps", "-R", $prereq);
+                    my $res = $self->_run_lcpan("deps", "-R", "--perl-version", $self->{perl_version}->numify, $prereq);
                     for my $entry (@{ $res }) {
                         $entry->{module} =~ s/^\s+//;
                         push @mods, $entry->{module};
