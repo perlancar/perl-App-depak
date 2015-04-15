@@ -8,7 +8,6 @@ use strict;
 use warnings;
 use experimental 'smartmatch';
 use Log::Any '$log';
-use Log::Any::For::Builtins qw(system my_qx);
 BEGIN { no warnings; $main::Log_Level = 'info' }
 
 use App::tracepm (); # we need list of trace methods too so we load early
@@ -290,20 +289,19 @@ sub _build_lib {
 }
 
 sub _pack {
-    require Proc::ChildError;
+    require IPC::System::Options;
 
     my $self = shift;
 
     my $tempdir = $self->{tempdir};
 
     local $CWD = $tempdir;
-    system join(
-        "",
-        "fatpack file ",
-        __sq($self->{abs_input_file}), " > ",
-        __sq($self->{abs_output_file}),
+    IPC::System::Options::system(
+        {log=>1, die=>1, shell=>1},
+        "fatpack", "file",
+        $self->{abs_input_file}, ">",
+        $self->{abs_output_file},
     );
-    die "Can't fatpack file: ".Proc::ChildError::explain_child_error()."\n" if $?;
 
     chmod 0755, $self->{abs_output_file};
 
