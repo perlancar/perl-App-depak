@@ -119,7 +119,7 @@ sub _build_lib {
                 push @mods, $entry->{module};
             }
             # pull all the other modules from the same dists
-            $res = $self->_run_lcpan("mods-from-same-dist", "--detail", @mods);
+            $res = $self->_run_lcpan("mods-from-same-dist", "--latest", "--detail", @mods);
             for my $entry (@{ $res }) {
                 $log->debugf("  Adding module: %s (include_prereq %s, dist %s)", $entry->{name}, $prereq, $entry->{dist});
                 $mod_paths{$entry->{name}} = undef;
@@ -203,7 +203,7 @@ sub _build_lib {
                         push @mods, $entry->{module};
                     }
                     # pull all the other modules from the same dists
-                    $res = $self->_run_lcpan("mods-from-same-dist", "--detail", @mods);
+                    $res = $self->_run_lcpan("mods-from-same-dist", "--latest", "--detail", @mods);
                     for my $entry (@{ $res }) {
                         $excluded_prereqs->{$entry->{name}} = $prereq;
                     }
