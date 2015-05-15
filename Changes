@@ -1,5 +1,13 @@
 Revision history for App-fatten
 
+0.38    2015-05-15 (PERLANCAR)
+
+        - Extract routine to App::lcpan::Call.
+
+        - Add --latest to 'lcpan mods-from-same-dist' command, to remove
+          extraneous modules.
+
+
 0.37    2015-04-15 (PERLANCAR)
 
         - Add option: --skip-not-found (set by default).
