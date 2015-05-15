@@ -10,49 +10,13 @@ use experimental 'smartmatch';
 use Log::Any '$log';
 BEGIN { no warnings; $main::Log_Level = 'info' }
 
+use App::lcpan::Call qw(call_lcpan_script);
 use App::tracepm (); # we need list of trace methods too so we load early
 use File::chdir;
 use File::Slurper qw(write_binary read_binary);
 use version;
 
 my @ALLOW_XS = qw(List::MoreUtils version::vxs);
-
-sub __sq {
-    require String::ShellQuote;
-    String::ShellQuote::shell_quote($_[0]);
-}
-
-sub _run_lcpan {
-    require IPC::System::Options;
-    require JSON;
-
-    my $self = shift;
-
-    state $checked;
-    unless ($checked) {
-        require File::Which;
-        File::Which::which("lcpan")
-            or die "lcpan is not available, please install it first\n";
-        my $res = IPC::System::Options::backtick(
-            {die=>1, log=>1}, "lcpan", "stats", "--json", "--no-naked-res");
-        $res = JSON::decode_json($res);
-        die "Can't 'lcpan stat': $res->[0] - $res->[1]\n"
-            unless $res->[0] == 200;
-        my $stats = $res->[2];
-        if ((time - $stats->{raw_last_index_time}) > 5*86400) {
-            die "lcpan index is over 5 days old, please refresh it first ".
-                "with 'lcpan update'\n";
-        }
-    }
-
-    my @lcpan_args = (@_, "--json", "--no-naked-res");
-    my $res = IPC::System::Options::backtick(
-        {die=>1, log=>1}, "lcpan", @lcpan_args);
-    $res = JSON::decode_json($res);
-    die "Can't 'lcpan ".join(" ", @lcpan_args)."': $res->[0] - $res->[1]\n"
-        unless $res->[0] == 200;
-    $res->[2];
-}
 
 our %SPEC;
 
@@ -113,13 +77,13 @@ sub _build_lib {
         for my $prereq (@{ $self->{include_prereq} }) {
             my @mods = ($prereq);
             # find prereq's dependencies
-            my $res = $self->_run_lcpan("deps", "-R", "--perl-version", $self->{perl_version}->numify, $prereq);
+            my $res = call_lcpan_script(argv=>["deps", "-R", "--perl-version", $self->{perl_version}->numify, $prereq]);
             for my $entry (@{ $res }) {
                 $entry->{module} =~ s/^\s+//;
                 push @mods, $entry->{module};
             }
             # pull all the other modules from the same dists
-            $res = $self->_run_lcpan("mods-from-same-dist", "--latest", "--detail", @mods);
+            $res = call_lcpan_script(argv=>["mods-from-same-dist", "--latest", "--detail", @mods]);
             for my $entry (@{ $res }) {
                 $log->debugf("  Adding module: %s (include_prereq %s, dist %s)", $entry->{name}, $prereq, $entry->{dist});
                 $mod_paths{$entry->{name}} = undef;
@@ -197,13 +161,13 @@ sub _build_lib {
                 for my $prereq (@{ $self->{exclude_prereq} }) {
                     my @mods = ($prereq);
                     # find prereq's dependencies
-                    my $res = $self->_run_lcpan("deps", "-R", "--perl-version", $self->{perl_version}->numify, $prereq);
+                    my $res = call_lcpan_script(argv=>["deps", "-R", "--perl-version", $self->{perl_version}->numify, $prereq]);
                     for my $entry (@{ $res }) {
                         $entry->{module} =~ s/^\s+//;
                         push @mods, $entry->{module};
                     }
                     # pull all the other modules from the same dists
-                    $res = $self->_run_lcpan("mods-from-same-dist", "--latest", "--detail", @mods);
+                    $res = call_lcpan_script(argv=>["mods-from-same-dist", "--latest", "--detail", @mods]);
                     for my $entry (@{ $res }) {
                         $excluded_prereqs->{$entry->{name}} = $prereq;
                     }
