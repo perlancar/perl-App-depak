@@ -1,5 +1,13 @@
 Revision history for App-fatten
 
+0.39    2015-06-17 (PERLANCAR)
+
+        - No functional changes.
+
+        - Extract stripper args to its own module
+          PERLANCAR::AppUtil::PerlStripper.
+
+
 0.38    2015-05-15 (PERLANCAR)
 
         - Extract routine to App::lcpan::Call.
