@@ -59,26 +59,22 @@ See more options:
  -- Paul J. Fenwick
 
 B<fatten> is an alternative command-line script for L<App::FatPacker>. I had a
-few problems when using the B<fatpack> script which comes with
-C<App::FatPacker>, namely: 1) using B<fatpack> to produce a fatpacked-script is
-a multistep process and I always forget the steps; 2) some modules that ought to
-be included are often not included; 3) I can't exclude some modules that I don't
-want to include, e.g. Perl core modules which should always already be
-available.
+few issues when using the B<fatpack> script which comes with C<App::FatPacker>.
+Some of these issues have been fixed, but fatten still offers some
+options/features which I personally use. I will also perhaps suggest some of
+these features to be merged to fatpack.
 
-Thus, here are the differences of B<fatten> compared to B<fatpack>:
+Differences from fatpack:
 
 =over
 
-=item * A simpler interface and some nice defaults
-
-Using B<fatten>, you only need a single step to produce the final result.
+=item * Different defaults
 
 Currently B<fatten> ignores C<fatlib/> and XS modules. It only focuses on
 creating free-standing Perl script which depends on pure-Perl modules (C<.pm>
 files) only. Including C<fatlib/> to a stand-alone script will require an
-approach like L<PAR::Archive> (i.e. bundling the required files in an archive
-and extracting the required files into a temporary directory).
+approach like L<PAR::Archive> anyway (i.e. bundling the required files in an
+archive and extracting the required files into a temporary directory).
 
 By default B<fatten> skips Perl core modules. This results in a smaller product.
 
@@ -101,7 +97,13 @@ App::tracepm documentation for more details.
 Of course, like B<fatpack>, you can also specify additional modules to include.
 And, unlike B<fatpack>, you can specify modules to exclude as well.
 
-=item * Some extra options
+=item * More options to include/exclude modules
+
+You can include/exclude invidual modules, or whole dists, or all modules located
+in a directory. You can also include/exclude a module *and* its dependencies,
+recursively (see C<--include-prereq> and C<--exclude-prereq>).
+
+=item * Other extra features
 
 Like an option to strip/squish the module source codes with L<Perl::Strip>
 (C<--strip>) or L<Perl::Stripper> (C<--stripper>) or L<Perl::Squish>
