@@ -552,6 +552,7 @@ _
             schema => ['str*'],
             cmdline_aliases => { V=>{} },
             # XXX completion: list of known perl versions by Module::CoreList?
+            tags => ['category:module-selection'],
         },
 
         overwrite => {
@@ -578,6 +579,7 @@ when data section is already available. Also, your script currently cannot
 contain data section of its own.
 
 _
+            tags => ['category:packing'],
         },
         trace_method => {
             summary => "Which method to use to trace dependencies",
@@ -597,7 +599,7 @@ not perform any tracing. Usually used in conjunction with `--include-from`.
 
 _
             cmdline_aliases => { t=>{} },
-            tags => ['category:module-selection'],
+            tags => ['category:module-selection', 'category:tracing'],
         },
         trace_extra_opts => {
             schema => ['hash*'],
@@ -658,6 +660,7 @@ _
         allow_xs => {
             'summary.alt.plurality.singular' => 'Allow adding a specified XS module',
             schema => ['array*', of=>'str*'],
+            tags => ['category:module-selection'],
         },
         use => {
             summary => 'Additional modules to "use"',
@@ -690,16 +693,19 @@ or:
 
 _
             schema => ['array*' => of => 'str*'],
+            tags => ['category:tracing'],
         },
         multiple_runs => {
             summary => 'Pass to tracepm',
             schema => ['array*' => of => ['hash*']],
+            tags => ['category:tracing'],
         },
 
         shebang => {
             summary => 'Set shebang line/path',
             schema => 'str*',
             default => '/usr/bin/perl',
+            tags => ['category:output'],
         },
 
         squish => {
