@@ -25,16 +25,18 @@ Basic usage:
  % depak yourscript.pl
 
  # specify output filename
- % depak yourscript.pl -o /tmp/yourscript.pl.packed
+ % depak yourscript.pl /tmp/yourscript.pl.packed
 
-See debug messages:
+ # use datapack instead of the default fatpack
+ % depak --pack-method datapack script script.packed
 
+ # See debug messages:
  % depak --debug script >script.packed
 
 Including and excluding modules:
 
  # add some more modules not detected by the tracer
- % depak -I Foo::Bar -I Foo::Baz script -o script.packed
+ % depak -I Foo::Bar -I Foo::Baz script script.packed
 
  # change trace method, usually 'require' will give pretty complete result
  % depak -t require <script >script.packed
@@ -47,7 +49,11 @@ See more options:
 =head1 DESCRIPTION
 
 B<depak>*) is a CLI application to pack your dependencies (required pure-Perl
-modules) along with your Perl script into a single file.
+modules) along with your Perl script into a single file. It will trace what
+modules your script requires using one of several available methods, and include
+them inside the script either using the fatpack or datapack technique. The
+result is a free-standing script which can run on vanilla/core Perl
+installation.
 
 *) the name is a spelling variation of "dep-pack" (for "dependency pack"), and
 is also an Indonesian word.
