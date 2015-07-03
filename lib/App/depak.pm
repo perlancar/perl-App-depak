@@ -1,4 +1,4 @@
-package App::fatten;
+package App::depak;
 
 # DATE
 # VERSION
@@ -6,7 +6,6 @@ package App::fatten;
 use 5.010001;
 use strict;
 use warnings;
-use experimental 'smartmatch';
 use Log::Any '$log';
 BEGIN { no warnings; $main::Log_Level = 'info' }
 
@@ -73,7 +72,7 @@ sub _build_lib {
     }
 
     if ($self->{include_prereq} && @{ $self->{include_prereq} }) {
-        $log->infof("Searching recursive prereqs to add into fatpacking: %s", $self->{include_prereq});
+        $log->infof("Searching recursive prereqs to add into the pack: %s", $self->{include_prereq});
         for my $prereq (@{ $self->{include_prereq} }) {
             my @mods = ($prereq);
             # find prereq's dependencies
@@ -157,7 +156,7 @@ sub _build_lib {
         if ($self->{exclude_prereq} && @{ $self->{exclude_prereq} }) {
             if (!$excluded_prereqs) {
                 $excluded_prereqs = {};
-                $log->infof("Searching recursive prereqs to exclude from fatpacking: %s", $self->{exclude_prereq});
+                $log->infof("Searching recursive prereqs to exclude from the pack: %s", $self->{exclude_prereq});
                 for my $prereq (@{ $self->{exclude_prereq} }) {
                     my @mods = ($prereq);
                     # find prereq's dependencies
@@ -303,38 +302,66 @@ sub _build_lib {
 }
 
 sub _pack {
-    require IPC::System::Options;
+    require File::Find;
 
     my $self = shift;
 
     my $tempdir = $self->{tempdir};
 
-    local $CWD = $tempdir;
-    IPC::System::Options::system(
-        {log=>1, die=>1, shell=>1},
-        "fatpack", "file",
-        $self->{abs_input_file}, ">",
-        $self->{abs_output_file},
-    );
-
-    chmod 0755, $self->{abs_output_file};
-
-    # replace shebang line (which contains perl path used by fatpack) with a
-    # default system perl. perhaps make this configurable in the future.
+    my %pack_args;
     {
-        my $ct = read_binary($self->{abs_output_file});
-        my $shebang = $self->{shebang} // '#!/usr/bin/perl';
-        $shebang = "#!$shebang" unless $shebang =~ /^#!/;
-        $shebang =~ s/\R+//g;
-        $ct =~ s{\A#!(.+)}{$shebang};
-        write_binary($self->{abs_output_file}, $ct);
+        local $CWD = "$tempdir/lib";
+        File::Find::find(
+            sub {
+                return unless -f;
+                return unless /\.pm$/i;
+                my $mod_pm = $File::Find::dir eq '.' ? $_ : "$File::Find::dir/$_";
+                $mod_pm =~ s!^\.[/\\]!!;
+                $mod_pm =~ s!\\!/!g; # convert windows-style path
+                $pack_args{module_srcs}{$mod_pm} = read_binary($_);
+            }, ".",
+        );
+        $self->{_included_modules} = [
+            map { my $m = $_; $m =~ s!/!::!g; $m =~ s/\.pm$//; $m }
+                sort keys %{ $pack_args{module_srcs} }
+        ];
     }
+
+    my $script = read_binary($self->{abs_input_file});
+
+    my $shebang = $self->{shebang} // '#!/usr/bin/perl';
+    $shebang = "#!$shebang" unless $shebang =~ /^#!/;
+    $shebang =~ s/\R+//g;
+
+    # strip shebang from script
+    $script =~ s/\A#![^\n]*\R?//;
+
+    my $res;
+    $pack_args{preamble}  = "$shebang\n\n";
+    $pack_args{postamble} = "\n$script";
+    if ($self->{pack_method} eq 'datapack') {
+        require Module::DataPack;
+        $res = Module::DataPack::datapack_modules(
+            %pack_args,
+        );
+        return $res unless $res->[0] == 200;
+    } else {
+        require Module::FatPack;
+        $res = Module::FatPack::fatpack_modules(
+            %pack_args,
+        );
+        return $res unless $res->[0] == 200;
+    }
+
+    write_binary($self->{abs_output_file}, $res->[2]);
+    chmod 0755, $self->{abs_output_file};
 
     $log->infof("  Produced %s (%.1f KB)",
                 $self->{abs_output_file}, (-s $self->{abs_output_file})/1024);
 }
 
 sub _test {
+    use experimental 'smartmatch';
     require Capture::Tiny;
     require IPC::System::Options;
 
@@ -387,12 +414,12 @@ my $trace_methods;
     }
 }
 
-$SPEC{fatten} = {
+$SPEC{depak} = {
     v => 1.1,
     summary => 'Pack your dependencies onto your script file',
     args => {
         input_file => {
-            summary => 'Path to input file (script to be fatpacked)',
+            summary => 'Path to input file (script to be packed)',
             description => <<'_',
 
 `-` (or if unspecified) means to take from standard input (internally, a
@@ -403,21 +430,18 @@ _
             default => '-',
             pos => 0,
             cmdline_aliases => { i=>{} },
+            tags => ['category:input'],
             'x.schema.entity' => 'filename',
         },
         output_file => {
             summary => 'Path to output file',
             description => <<'_',
 
-If input is from stdin, then output defaults to stdout. You can also specify
-stdout by using `-`.
-
-Otherwise, defaults to `<script>.fatpack` in source directory. If source
-directory happens to be unwritable by the script, will try `<script>.fatpack` in
-current directory. If that fails too, will die.
+`-` (or if unspecified) means to output to stdout.
 
 _
             schema => ['str*'],
+            default => '-',
             cmdline_aliases => { o=>{} },
             pos => 1,
             tags => ['category:output'],
@@ -536,6 +560,25 @@ _
             'summary.alt.bool.yes' => 'Overwrite output if previously exists',
             tags => ['category:output'],
         },
+        pack_method => {
+            summary => 'Packing method to use',
+            schema => ['str*', in=>['fatpack', 'datapack']],
+            default => 'fatpack',
+            cmdline_aliases => {},
+            description => <<'_',
+
+Either `fatpack` (the default) or `datapack`. Fatpack puts packed modules inside
+Perl variables and load them via require hook. Datapack puts packed modules in
+__DATA__ section. For more details about each method, please consult
+`Module::FatPack` and `Module::DataPack`.
+
+One thing to remember is, with datapack, your script cannot load modules during
+compile-time (`use`): all modules must be loaded during run-time (`require`)
+when data section is already available. Also, your script currently cannot
+contain data section of its own.
+
+_
+        },
         trace_method => {
             summary => "Which method to use to trace dependencies",
             schema => ['str*', {
@@ -549,8 +592,8 @@ Different tracing methods have different pro's and con's, one method might
 detect required modules that another method does not, and vice versa. There are
 several methods available, please see `App::tracepm` for more details.
 
-A special value of `none` is also provided. If this is selected, then fatten
-will not perform any tracing. Usually used in conjunction with `--include-from`.
+A special value of `none` is also provided. If this is selected, then depak will
+not perform any tracing. Usually used in conjunction with `--include-from`.
 
 _
             cmdline_aliases => { t=>{} },
@@ -562,13 +605,13 @@ _
             tags => ['category:module-selection'],
         },
         include_prereq => {
-            'summary.alt.plurality.singular' => 'Include module and its recursive dependencies for fatpacking',
+            'summary.alt.plurality.singular' => 'Include module and its recursive dependencies for packing',
             schema => ['array*', of=>'str*'],
             description => <<'_',
 
 This option can be used to include a module, as well as other modules in the
 same distribution as that module, as well as the distribution's recursive
-dependencies, for fatpacking. Dependencies will be searched using a local CPAN
+dependencies, for packing. Dependencies will be searched using a local CPAN
 index. This is a convenient alternative to tracing a module. So you might want
 to use this option together with setting `trace_method` to `none`.
 
@@ -579,17 +622,17 @@ _
             tags => ['category:module-selection'],
         },
         exclude_prereq => {
-            'summary.alt.plurality.singular' => 'Allow script to depend on a module instead of fatpacking it',
+            'summary.alt.plurality.singular' => 'Allow script to depend on a module instead of packing it',
             schema => ['array*', of=>'str*'],
             description => <<'_',
 
 This option can be used to express that script will depend on a specified
-module, instead of including it fatpacked. The prereq-ed module, as well as
-other modules in the same distribution, as well as its prereqs and so on
-recursively, will be excluded from fatpacking as well.
+module, instead of including it packed. The prereq-ed module, as well as other
+modules in the same distribution, as well as its prereqs and so on recursively,
+will be excluded from packing as well.
 
 This option can be used to express dependency to an XS module, since XS modules
-cannot be fatpacked.
+cannot be packed.
 
 To query dependencies, a local CPAN index is used for querying speed. Thus, this
 option requires that `lcpan` is installed and a fairly recent lcpan index is
@@ -639,11 +682,11 @@ Will be used when running your script, e.g. when `trace_method` is `fatpacker`
 or `require`. For example, if your script requires three arguments: `--foo`,
 `2`, `"bar baz"` then you can either use:
 
-    % fatten script output --args --foo --args 2 --args "bar baz"
+    % depak script output --args --foo --args 2 --args "bar baz"
 
 or:
 
-    % fatten script output --args-json '["--foo",2,"bar baz"]'
+    % depak script output --args-json '["--foo",2,"bar baz"]'
 
 _
             schema => ['array*' => of => 'str*'],
@@ -685,10 +728,10 @@ _
             cmdline_aliases => {T=>{}},
             description => <<'_',
 
-Testing is done by running the resulting fatpacked result with `perl
--Mlib::core::only`. To test, at least one test case is required (see
-`--test-case-json`). Test cases specify what arguments to give to program, what
-exit code we expect, and what the output should contain.
+Testing is done by running the resulting packed script with perl. To test, at
+least one test case is required (see `--test-case-json`). Test cases specify
+what arguments to give to program, what exit code we expect, and what the output
+should contain.
 
 _
             tags => ['category:testing'],
@@ -706,11 +749,8 @@ _
             tags => ['category:testing'],
         },
     },
-    deps => {
-        exec => 'fatpack',
-    },
 };
-sub fatten {
+sub depak {
     require Cwd;
     require File::MoreUtil;
     require File::Spec;
@@ -735,9 +775,6 @@ sub fatten {
         s/\.pm\z//;
     }
 
-    # my understanding is that fatlib contains the stuffs beside the pure-perl
-    # .pm files, and currently won't pack anyway.
-    #mkdir "$tempdir/fatlib";
     mkdir "$tempdir/lib";
 
     $self->{perl_version} //= $^V;
@@ -758,43 +795,17 @@ sub fatten {
             [500, "Can't find absolute path of input file $self->{input_file}"];
     }
 
-    my $output_file;
-    {
-        $output_file = $self->{output_file};
-        if (defined $output_file) {
-            if ($output_file eq '-') {
-                $self->{output_file_is_stdout} = 1;
-                $self->{output_file} = $self->{abs_output_file} = (File::Temp::tempfile())[1];
-                last;
-            } else {
-                return [412, "Output file '$output_file' exists, won't overwrite (see --overwrite)"]
-                    if File::MoreUtil::file_exists($output_file) && !$self->{overwrite};
-                last if open my($fh), ">", $output_file;
-                return [500, "Can't write to output file '$output_file': $!"];
-            }
-        }
-
-        my ($vol, $dir, $file) = File::Spec->splitpath($self->{input_file});
-        my $fh;
-
-        # try <input>.fatpack in the source directory
-        $output_file = File::Spec->catpath($vol, $dir, "$file.fatpack");
-        return [412, "Output file '$output_file' exists, won't overwrite (see --overwrite)"]
-            if File::MoreUtil::file_exists($output_file) && !$self->{overwrite};
-        last if open $fh, ">", $output_file;
-
-        # if failed, try <input>.fatpack in the current directory
-        $output_file = "$CWD/$file.fatpack";
-        return [412, "Output file '$output_file' exists, won't overwrite (see --overwrite)"]
-            if File::MoreUtil::file_exists($output_file) && !$self->{overwrite};
-        last if open $fh, ">", $output_file;
-
-        # failed too, bail
-        return [500, "Can't write $file.fatpack in source- as well as ".
-                    "current directory: $!"];
+    if ($self->{output_file} eq '-') {
+        $self->{output_file_is_stdout} = 1;
+        $self->{output_file} = $self->{abs_output_file} = (File::Temp::tempfile())[1];
+    } else {
+        return [412, "Output file '$self->{output_file}' exists, won't overwrite (see --overwrite)"]
+            if File::MoreUtil::file_exists($self->{output_file}) && !$self->{overwrite};
+        return [500, "Can't write to output file '$self->{output_file}': $!"]
+            unless open my($fh), ">", $self->{output_file};
     }
-    $self->{output_file} = $output_file;
-    $self->{abs_output_file} //= Cwd::abs_path($output_file) or return
+
+    $self->{abs_output_file} //= Cwd::abs_path($self->{output_file}) or return
         [500, "Can't find absolute path of output file '$self->{output_file}'"];
 
     unless ($self->{trace_method} eq 'none') {
@@ -830,16 +841,17 @@ sub fatten {
         $self->_test;
     }
 
-    [200];
+    [200, "OK", undef, {
+        'func.included_modules' => $self->{_included_modules},
+    }];
 }
 
 # IFBUILT
 ## INSERT_BLOCK: PERLANCAR::AppUtil::PerlStripper _add_stripper_args_to_meta
-#_add_stripper_args_to_meta($SPEC{fatten});
+#_add_stripper_args_to_meta($SPEC{depak});
 # END IFBUILT
-
 # IFUNBUILT
-require PERLANCAR::AppUtil::PerlStripper; PERLANCAR::AppUtil::PerlStripper::_add_stripper_args_to_meta($SPEC{fatten});
+require PERLANCAR::AppUtil::PerlStripper; PERLANCAR::AppUtil::PerlStripper::_add_stripper_args_to_meta($SPEC{depak});
 # END IFUNBUILT
 
 1;
@@ -849,13 +861,4 @@ require PERLANCAR::AppUtil::PerlStripper; PERLANCAR::AppUtil::PerlStripper::_add
 
 =head1 SYNOPSIS
 
-This distribution provides command-line utility called L<fatten>.
-
-
-=head2 TODO
-
-=over
-
-=back
-
-=cut
+See L<depak>.

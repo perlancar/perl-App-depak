@@ -1,4 +1,4 @@
-package Perinci::CmdLine::fatten;
+package Perinci::CmdLine::depak;
 
 # DATE
 # VERSION
@@ -47,4 +47,13 @@ sub hook_before_read_config_file {
 =head1 DESCRIPTION
 
 This subclass sets default config_profile to the name of input script, for
-convenience.
+convenience. So for example:
+
+ % depak -i ~/proj/Bar-Baz/bin/bar
+
+will automatically set config_profile to C<bar>, as if you had written:
+
+ % depak -i ~/proj/Bar-Baz/bin/bar --config-profile bar
+
+Of course, you can explicitly set C<--config-profile> to something else to
+override this.

@@ -1,4 +1,24 @@
-Revision history for App-fatten
+Revision history for App-depak
+
+0.41    2015-07-03 (PERLANCAR) (unreleased)
+
+        [INCOMPATIBLE CHANGES]
+
+        - Rename application from 'fatten' to 'depak' (hint: "dep-pack") to
+          reflect the fact that aside from fatpack, this application now also
+          supports another packing technique: datapack (see Module::DataPack).
+
+        - Output now defaults to stdout if not specified instead of to
+          "<srcpath>.fatpack". I find outputting to stdout by default to be more
+          convenient in most cases.
+
+        [ENHANCEMENTS]
+
+        - Add support for datapack technique (use --pack-method datapack).
+
+        - Return extra metadata 'func.included_modules' (array) containing a
+          sorted list of included modules in the generated script.
+
 
 0.40    2015-07-01 (PERLANCAR)
 

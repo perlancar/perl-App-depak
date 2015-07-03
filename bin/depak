@@ -1,0 +1,82 @@
+#!perl
+
+# DATE
+# VERSION
+
+use 5.010001;
+use strict;
+use warnings;
+
+use Perinci::CmdLine::depak;
+
+Perinci::CmdLine::depak->new(
+    log => 1,
+    url => '/App/depak/depak',
+)->run;
+
+#ABSTRACT:
+#PODNAME:
+
+=head1 SYNOPSIS
+
+Basic usage:
+
+ # outputs to stdout
+ % depak yourscript.pl
+
+ # specify output filename
+ % depak yourscript.pl -o /tmp/yourscript.pl.packed
+
+See debug messages:
+
+ % depak --debug script >script.packed
+
+Including and excluding modules:
+
+ # add some more modules not detected by the tracer
+ % depak -I Foo::Bar -I Foo::Baz script -o script.packed
+
+ # change trace method, usually 'require' will give pretty complete result
+ % depak -t require <script >script.packed
+
+See more options:
+
+ % depak --help
+
+
+=head1 DESCRIPTION
+
+B<depak>*) is a CLI application to pack your dependencies (required pure-Perl
+modules) along with your Perl script into a single file.
+
+*) the name is a spelling variation of "dep-pack" (for "dependency pack"), and
+is also an Indonesian word.
+
+
+=head1 append:CONFIGURATION FILE
+
+Profiles are also automatically matched to the name of the script being
+processed, if not specified. For example:
+
+ [profile=parse-id-phone]
+ trace_method=require
+ #overwrite=1
+ include=Parse::PhoneNumber::ID
+ include=Perinci::CmdLine::Lite
+ include=Data::Check::Structure
+ include=Text::Table::Tiny
+
+which will automatically be used when you depak a script named
+C<parse-id-phone>.
+
+
+=head1 SEE ALSO
+
+L<App::FatPacker>, L<Module::FatPack>, L<App::FatPackUtils>
+
+L<Module::DataPack>, L<App::DataPackUtils>
+
+For producing free-standing Perl scripts/applications, there are other
+alternatives like L<PAR::Packer> (can also pack XS modules and compress the
+included files in a special archive, but with higher startup time and temporary
+directory to extract stuffs).
