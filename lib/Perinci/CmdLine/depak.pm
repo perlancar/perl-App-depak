@@ -4,12 +4,17 @@ package Perinci::CmdLine::depak;
 # VERSION
 
 use 5.010;
+use Log::Any qw($log);
 use parent qw(Perinci::CmdLine::Lite);
 
 sub hook_before_read_config_file {
     my ($self, $r) = @_;
 
-    return if defined $r->{config_profile};
+    if (defined $r->{config_profile}) {
+        $log->tracef("[pericmd-depak] Using config profile '%s' (predefined)",
+                     $r->{config_profile});
+        return;
+    }
 
     # this is a hack, not proper cmdline arg parsing like in parse_argv().
 
@@ -27,16 +32,20 @@ sub hook_before_read_config_file {
                 last;
             }
         }
-        if ($arg !~ /^-/ || $in_args) {
+        if ($in_args) {
             $input_file = $arg;
             last;
         }
     }
 
-    return unless defined $input_file;
+    unless (defined $input_file) {
+        $log->tracef("[pericmd-depak] Not selecting config profile (no input file defined)");
+        return;
+    }
 
     require File::Spec;
     my ($vol, $dir, $name) = File::Spec->splitpath($input_file);
+    $log->tracef("[pericmd-depak] Selecting config profile '%s' (from input file)", $name);
     $r->{config_profile} = $name;
     $r->{ignore_missing_config_profile_section} = 1;
 }
