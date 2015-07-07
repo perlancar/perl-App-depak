@@ -1,5 +1,12 @@
 Revision history for App-depak
 
+0.43    2015-07-07 (PERLANCAR)
+
+	- No functional changes.
+
+	- Mention staticperl.
+
+
 0.42    2015-07-05 (PERLANCAR)
 
 	- [Bugfix] Fix selecting input file when autoselecting config
