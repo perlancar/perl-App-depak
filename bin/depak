@@ -85,4 +85,5 @@ L<Module::DataPack>, L<App::DataPackUtils>
 For producing free-standing Perl scripts/applications, there are other
 alternatives like L<PAR::Packer> (can also pack XS modules and compress the
 included files in a special archive, but with higher startup time and temporary
-directory to extract stuffs).
+directory to extract stuffs), L<App::staticperl> (packs perl, core modules, and
+your modules/scripts in a single static binary).
