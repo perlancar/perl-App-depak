@@ -1,5 +1,11 @@
 Revision history for App-depak
 
+0.44    2015-07-27 (PERLANCAR)
+
+	- Observe env DEBUG_KEEP_TEMPDIR to set default for
+	  debug_keep_tempdir option.
+
+
 0.43    2015-07-07 (PERLANCAR)
 
 	- No functional changes.
