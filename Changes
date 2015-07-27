@@ -1,5 +1,13 @@
 Revision history for App-depak
 
+0.45    2015-07-27 (PERLANCAR)
+
+	- [ux] Rename --include to --include-module and --exclude to
+	  --exclude-module to be more consistent with the other
+	  --{include,exclude}-FOO (but provide the old aliases --include
+	  and --exclude).
+
+
 0.44    2015-07-27 (PERLANCAR)
 
 	- Observe env DEBUG_KEEP_TEMPDIR to set default for
