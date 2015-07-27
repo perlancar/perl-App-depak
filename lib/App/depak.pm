@@ -90,7 +90,7 @@ sub _build_lib {
         }
     }
 
-    for (@{ $self->{include} // [] }) {
+    for (@{ $self->{include_module} // [] }) {
         $log->debugf("  Adding module: %s (included)", $_);
         $mod_paths{$_} = undef;
     }
@@ -178,7 +178,7 @@ sub _build_lib {
             }
         }
 
-        if ($self->{exclude} && $mod ~~ @{ $self->{exclude} }) {
+        if ($self->{exclude_module} && $mod ~~ @{ $self->{exclude_module} }) {
             $log->infof("Excluding %s: skipped", $mod);
             next MOD_TO_FILTER;
         }
@@ -447,7 +447,7 @@ _
             tags => ['category:output'],
             'x.schema.entity' => 'filename',
         },
-        include => {
+        include_module => {
             summary => 'Include extra modules',
             'summary.alt.plurality.singular' => 'Include an extra module',
             description => <<'_',
@@ -457,7 +457,7 @@ here.
 
 _
             schema => ['array*' => of => 'str*'],
-            cmdline_aliases => { I=>{} },
+            cmdline_aliases => { I=>{}, include=>{} },
             tags => ['category:module-selection'],
             'x.schema.element_entity' => 'modulename',
         },
@@ -488,7 +488,7 @@ _
             tags => ['category:module-selection'],
             'x.schema.element_entity' => 'distname',
         },
-        exclude => {
+        exclude_module => {
             summary => 'Modules to exclude',
             'summary.alt.plurality.singular' => 'Exclude a module',
             description => <<'_',
@@ -497,7 +497,7 @@ When you don't want to include a module, specify it here.
 
 _
             schema => ['array*' => of => 'str*'],
-            cmdline_aliases => { E => {} },
+            cmdline_aliases => { E => {}, exclude => {} },
             tags => ['category:module-selection'],
             'x.schema.element_entity' => 'modulename',
         },
@@ -773,9 +773,9 @@ sub depak {
 
     # for convenience of completion in bash, we allow / to separate namespace.
     # we convert it back to :: here.
-    for (@{ $self->{exclude} // [] },
+    for (@{ $self->{exclude_module} // [] },
          @{ $self->{exclude_dist} // [] },
-         @{ $self->{include} // [] },
+         @{ $self->{include_module} // [] },
          @{ $self->{include_dist} // [] },
          @{ $self->{use} // [] },
      ) {
