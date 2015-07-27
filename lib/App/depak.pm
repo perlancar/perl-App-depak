@@ -724,7 +724,7 @@ _
 
         debug_keep_tempdir => {
             summary => 'Keep temporary directory for debugging',
-            schema => ['bool' => default=>0],
+            schema => ['bool'],
             tags => ['category:debugging'],
         },
 
@@ -764,6 +764,8 @@ sub depak {
 
     my %args = @_;
     my $self = __PACKAGE__->new(%args);
+
+    $self->{debug_keep_tempdir} //= $ENV{DEBUG_KEEP_TEMPDIR} // 0;
 
     my $tempdir = File::Temp::tempdir(CLEANUP => 0);
     $log->debugf("Created tempdir %s", $tempdir);

@@ -59,6 +59,13 @@ installation.
 is also an Indonesian word.
 
 
+=head1 append:ENVIRONMENT
+
+=head2 DEBUG_KEEP_TEMPDIR => bool
+
+Set default for C<debug_keep_tempdir> option.
+
+
 =head1 append:CONFIGURATION FILE
 
 Profiles are also automatically matched to the name of the script being
