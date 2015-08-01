@@ -1,5 +1,12 @@
 Revision history for App-depak
 
+0.46    2015-08-01 (PERLANCAR)
+
+	- No functional changes.
+
+	- Bump prereq Module::DataPack to 0.09.
+
+
 0.45    2015-07-27 (PERLANCAR)
 
 	- [ux] Rename --include to --include-module and --exclude to
