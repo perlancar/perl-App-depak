@@ -6,7 +6,7 @@ package App::depak;
 use 5.010001;
 use strict;
 use warnings;
-use Log::Any '$log';
+use Log::Any::IfLOG '$log';
 BEGIN { no warnings; $main::Log_Level = 'info' }
 
 use App::lcpan::Call qw(call_lcpan_script);

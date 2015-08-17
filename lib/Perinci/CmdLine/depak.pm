@@ -4,7 +4,7 @@ package Perinci::CmdLine::depak;
 # VERSION
 
 use 5.010;
-use Log::Any qw($log);
+use Log::Any::IfLOG qw($log);
 use parent qw(Perinci::CmdLine::Lite);
 
 sub hook_before_read_config_file {
