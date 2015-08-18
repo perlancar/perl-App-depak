@@ -1,5 +1,14 @@
 Revision history for App-depak
 
+0.48    2015-08-18 (PERLANCAR)
+
+	- No functional changes.
+
+	- [dist] Move spec prereqs from RuntimeRequires to
+	  DevelopRecommends to reduce deps but still allow indicating spec
+	  requirement.
+
+
 0.47    2015-08-17 (PERLANCAR)
 
 	- No functional changes.
