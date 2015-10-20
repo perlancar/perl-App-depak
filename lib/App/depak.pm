@@ -302,12 +302,14 @@ sub _build_lib {
 }
 
 sub _pack {
+    require ExtUtils::MakeMaker;
     require File::Find;
 
     my $self = shift;
 
     my $tempdir = $self->{tempdir};
 
+    $self->{_included_modules} = {};
     my %pack_args;
     {
         local $CWD = "$tempdir/lib";
@@ -318,13 +320,18 @@ sub _pack {
                 my $mod_pm = $File::Find::dir eq '.' ? $_ : "$File::Find::dir/$_";
                 $mod_pm =~ s!^\.[/\\]!!;
                 $mod_pm =~ s!\\!/!g; # convert windows-style path
+
+                my $mod = $mod_pm;
+                $mod =~ s/\.pm$//;
+                $mod =~ s!/!::!g;
+
+                my $mod_ver = MM->parse_version($_);
+                $mod_ver = undef if defined($mod_ver) && $mod_ver eq 'undef';
+
                 $pack_args{module_srcs}{$mod_pm} = read_binary($_);
+                $self->{_included_modules}{$mod} = $mod_ver;
             }, ".",
         );
-        $self->{_included_modules} = [
-            map { my $m = $_; $m =~ s!/!::!g; $m =~ s/\.pm$//; $m }
-                sort keys %{ $pack_args{module_srcs} }
-        ];
     }
 
     my $script = read_binary($self->{abs_input_file});
