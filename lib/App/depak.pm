@@ -77,13 +77,15 @@ sub _build_lib {
             my @mods = ($prereq);
             # find prereq's dependencies
             my $res = call_lcpan_script(argv=>["deps", "-R", "--perl-version", $self->{perl_version}->numify, $prereq]);
-            for my $entry (@{ $res }) {
+            die "Can't lcpan deps: $res->[0] - $res->[1]" unless $res->[0] == 200;
+            for my $entry (@{ $res->[2] }) {
                 $entry->{module} =~ s/^\s+//;
                 push @mods, $entry->{module};
             }
             # pull all the other modules from the same dists
             $res = call_lcpan_script(argv=>["mods-from-same-dist", "--latest", "--detail", @mods]);
-            for my $entry (@{ $res }) {
+            die "Can't lcpan mods-from-same-dist: $res->[0] - $res->[1]" unless $res->[0] == 200;
+            for my $entry (@{ $res->[2] }) {
                 $log->debugf("  Adding module: %s (include_prereq %s, dist %s)", $entry->{name}, $prereq, $entry->{dist});
                 $mod_paths{$entry->{name}} = undef;
             }
@@ -161,13 +163,15 @@ sub _build_lib {
                     my @mods = ($prereq);
                     # find prereq's dependencies
                     my $res = call_lcpan_script(argv=>["deps", "-R", "--perl-version", $self->{perl_version}->numify, $prereq]);
-                    for my $entry (@{ $res }) {
+                    die "Can't lcpan deps: $res->[0] - $res->[1]" unless $res->[0] == 200;
+                    for my $entry (@{ $res->[2] }) {
                         $entry->{module} =~ s/^\s+//;
                         push @mods, $entry->{module};
                     }
                     # pull all the other modules from the same dists
                     $res = call_lcpan_script(argv=>["mods-from-same-dist", "--latest", "--detail", @mods]);
-                    for my $entry (@{ $res }) {
+                    die "Can't lcpan mods-from-same-dist: $res->[0] - $res->[1]" unless $res->[0] == 200;
+                    for my $entry (@{ $res->[2] }) {
                         $excluded_prereqs->{$entry->{name}} = $prereq;
                     }
                 }
