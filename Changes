@@ -1,5 +1,12 @@
 Revision history for App-depak
 
+0.52    2016-02-29 (PERLANCAR)
+
+	- Adjust to App::lcpan 0.66 (core modules now listed in 'deps'
+	  output so we need to exclude it explicitly using
+	  --no-include-core).
+
+
 0.51    2016-02-14 (PERLANCAR)
 
 	- No functional changes.
