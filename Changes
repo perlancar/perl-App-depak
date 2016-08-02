@@ -1,5 +1,11 @@
 Revision history for App-depak
 
+0.53    2016-08-02 (PERLANCAR)
+
+        - [ux] skip_not_found now defaults to off unless when include_prereq is
+          specified then it defaults to on.
+
+
 0.52    2016-02-29 (PERLANCAR)
 
 	- Adjust to App::lcpan 0.66 (core modules now listed in 'deps'
