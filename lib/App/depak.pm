@@ -658,12 +658,15 @@ _
             summary => 'Instead of dying, skip when module to add is not found',
             'summary.alt.bool.not' => 'Instead of skipping, die when module to add is not found',
             schema => ['bool'],
-            default => 1,
             description => <<'_',
 
 This option is useful when you use `include_prereq`, because modules without its
 own .pm files will also be included (CPAN indexes packages, including those that
 do not have their own .pm files).
+
+By default, this option is turned off unless when you use `include_prereq` where
+this option is by default turned on. You can of course override the default by
+explicitly specify this option.
 
 _
             tags => ['category:module-selection'],
@@ -777,6 +780,8 @@ sub depak {
     my $self = __PACKAGE__->new(%args);
 
     $self->{debug_keep_tempdir} //= $ENV{DEBUG_KEEP_TEMPDIR} // 0;
+
+    $self->{skip_not_found} //= $self->{include_prereq} ? 1:0;
 
     my $tempdir = File::Temp::tempdir(CLEANUP => 0);
     $log->debugf("Created tempdir %s", $tempdir);
