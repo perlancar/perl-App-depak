@@ -103,7 +103,7 @@ sub _build_lib {
             $log->debugf("  Adding modules: %s (included dist)", join(", ", @distmods));
             $mod_paths{$_} = undef for @distmods;
         } else {
-            $log->debugf("  Adding module: %s (included dist, but can't find other modules)", $_);
+            $log->infof("  Adding module: %s (included dist, but can't find other modules)", $_);
             $mod_paths{$_} = undef;
         }
     }
