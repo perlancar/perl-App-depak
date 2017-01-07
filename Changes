@@ -1,5 +1,3 @@
-Revision history for App-depak
-
 0.53    2016-08-02 (PERLANCAR)
 
         - [ux] skip_not_found now defaults to off unless when include_prereq is
