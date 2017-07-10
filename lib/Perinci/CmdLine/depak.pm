@@ -4,14 +4,14 @@ package Perinci::CmdLine::depak;
 # VERSION
 
 use 5.010;
-use Log::Any::IfLOG qw($log);
+use Log::ger;
 use parent qw(Perinci::CmdLine::Lite);
 
 sub hook_before_read_config_file {
     my ($self, $r) = @_;
 
     if (defined $r->{config_profile}) {
-        $log->tracef("[pericmd-depak] Using config profile '%s' (predefined)",
+        log_trace("[pericmd-depak] Using config profile '%s' (predefined)",
                      $r->{config_profile});
         return;
     }
@@ -39,13 +39,13 @@ sub hook_before_read_config_file {
     }
 
     unless (defined $input_file) {
-        $log->tracef("[pericmd-depak] Not selecting config profile (no input file defined)");
+        log_trace("[pericmd-depak] Not selecting config profile (no input file defined)");
         return;
     }
 
     require File::Spec;
     my ($vol, $dir, $name) = File::Spec->splitpath($input_file);
-    $log->tracef("[pericmd-depak] Selecting config profile '%s' (from input file)", $name);
+    log_trace("[pericmd-depak] Selecting config profile '%s' (from input file)", $name);
     $r->{config_profile} = $name;
     $r->{ignore_missing_config_profile_section} = 1;
 }
