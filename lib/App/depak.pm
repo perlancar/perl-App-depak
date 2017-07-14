@@ -865,6 +865,11 @@ sub depak {
         File::Path::remove_tree($tempdir);
     }
 
+    if ($self->{test}) {
+        log_info("Testing ...");
+        $self->_test;
+    }
+
     if ($self->{input_file_is_stdin}) {
         unlink $self->{abs_input_file};
     }
@@ -873,11 +878,6 @@ sub depak {
             or return [500, "Can't open temporary output file '$self->{abs_output_file}': $!"];
         local $_; print while <$fh>; close $fh;
         unlink $self->{abs_output_file};
-    }
-
-    if ($self->{test}) {
-        log_info("Testing ...");
-        $self->_test;
     }
 
     [200, "OK", undef, {
