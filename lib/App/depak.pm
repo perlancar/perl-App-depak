@@ -396,7 +396,7 @@ sub _test {
         my $output = Capture::Tiny::capture_merged(
             sub {
                 IPC::System::Options::system({log=>0, shell=>0}, @cmd);
-                $exit = $?;
+                $exit = $? >> 8;
             }
         );
         my $expected_exit = $case->{exit_code} // 0;
