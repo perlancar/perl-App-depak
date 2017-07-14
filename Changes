@@ -1,3 +1,14 @@
+0.57    2017-07-14 (PERLANCAR)
+
+	- [Bugfix] Test *before* unlinking temporary output file, not
+	  after.
+
+	- [Bugfix] Fix testing exit code (forgot to >>8).
+
+	- Add hint for shcompgen because it doesn't detect
+	  Perinci::CmdLine::depak-based script.
+
+
 0.56    2017-07-14 (PERLANCAR)
 
         - Add option --put-hook-at-the-end.
