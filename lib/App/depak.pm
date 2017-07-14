@@ -350,6 +350,7 @@ sub _pack {
     my $res;
     $pack_args{preamble}  = "$shebang\n\n";
     $pack_args{postamble} = "\n$script";
+    $pack_args{put_hook_at_the_end} = $self->{put_hook_at_the_end};
     if ($self->{pack_method} eq 'datapack') {
         require Module::DataPack;
         $res = Module::DataPack::datapack_modules(
@@ -591,6 +592,20 @@ contain data section of its own.
 
 _
             tags => ['category:packing'],
+        },
+        put_hook_at_the_end => {
+            summary => 'Prefer modules from other sources (filesystem) first',
+            schema => 'bool*',
+            description => <<'_',
+
+Normally, the `fatpack` or `datapack` require hook will be put at the front of
+`@INC`. If this option is set to true, the require hook will be put at the end.
+This means Perl will search modules from the regular sources (filesystem) first.
+This is useful for example if you want your application to use the possibly
+newer version of modules on the filesystem before using the packed version as
+the fallback when some modules are not installed.
+
+_
         },
         trace_method => {
             summary => "Which method to use to trace dependencies",
