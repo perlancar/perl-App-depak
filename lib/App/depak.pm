@@ -52,7 +52,6 @@ sub _build_lib {
     require File::Copy;
     require File::Find;
     require File::Path;
-    require List::MoreUtils;
     require Module::Path::More;
 
     my $self = shift;
