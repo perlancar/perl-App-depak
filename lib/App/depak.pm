@@ -75,7 +75,7 @@ sub _build_lib {
         for my $prereq (@{ $self->{include_prereq} }) {
             my @mods = ($prereq);
             # find prereq's dependencies
-            my $res = call_lcpan_script(argv=>["deps", "--no-include-core", "-R", "--perl-version", $self->{perl_version}->numify, $prereq]);
+            my $res = call_lcpan_script(argv=>["deps", "--exclude-core", "-R", "--perl-version", $self->{perl_version}->numify, $prereq]);
             die "Can't lcpan deps: $res->[0] - $res->[1]" unless $res->[0] == 200;
             for my $entry (@{ $res->[2] }) {
                 $entry->{module} =~ s/^\s+//;
@@ -161,7 +161,7 @@ sub _build_lib {
                 for my $prereq (@{ $self->{exclude_prereq} }) {
                     my @mods = ($prereq);
                     # find prereq's dependencies
-                    my $res = call_lcpan_script(argv=>["deps", "--no-include-core", "-R", "--perl-version", $self->{perl_version}->numify, $prereq]);
+                    my $res = call_lcpan_script(argv=>["deps", "--exclude-core", "-R", "--perl-version", $self->{perl_version}->numify, $prereq]);
                     die "Can't lcpan deps: $res->[0] - $res->[1]" unless $res->[0] == 200;
                     for my $entry (@{ $res->[2] }) {
                         $entry->{module} =~ s/^\s+//;
