@@ -1,3 +1,8 @@
+0.582   2020-04-08  Released-By: PERLANCAR
+
+	- [build] Rebuild, to update Sah coerce rule module names.
+
+
 0.581   2019-06-20  Released-By: PERLANCAR
 
 	- Update lcpan command (--no-include-core becomes --exclude-core
