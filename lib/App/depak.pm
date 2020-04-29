@@ -1,6 +1,8 @@
 package App::depak;
 
+# AUTHORITY
 # DATE
+# DIST
 # VERSION
 
 use 5.010001;
@@ -437,12 +439,11 @@ $SPEC{depak} = {
 temporary file will be created to handle this).
 
 _
-            schema => ['str*'],
+            schema => ['filename*'],
             default => '-',
             pos => 0,
             cmdline_aliases => { i=>{} },
             tags => ['category:input'],
-            'x.schema.entity' => 'filename',
         },
         output_file => {
             summary => 'Path to output file',
@@ -451,12 +452,11 @@ _
 `-` (or if unspecified) means to output to stdout.
 
 _
-            schema => ['str*'],
+            schema => ['filename*'],
             default => '-',
             cmdline_aliases => { o=>{} },
             pos => 1,
             tags => ['category:output'],
-            'x.schema.entity' => 'filename',
         },
         include_module => {
             summary => 'Include extra modules',
@@ -467,23 +467,20 @@ When the tracing process fails to include a required module, you can add it
 here.
 
 _
-            schema => ['array*' => of => 'str*'],
+            schema => ['array*' => of => 'perl::modname*'],
             cmdline_aliases => { I=>{}, include=>{} },
             tags => ['category:module-selection'],
-            'x.schema.element_entity' => 'modulename',
         },
         include_list => {
             summary => 'Include extra modules from a list in a file',
-            schema => 'str*', # XXX filename
+            schema => 'filename*', # XXX filename
             tags => ['category:module-selection'],
-            'x.schema.entity' => 'filename',
         },
         include_dir => {
             summary => 'Include extra modules under directories',
             'summary.alt.plurality.singular' => 'Include extra modules under a directory',
-            schema => ['array*' => of => 'str*'],
+            schema => ['array*' => of => 'dirname*'],
             tags => ['category:module-selection'],
-            'x.schema.element_entity' => 'dirname',
         },
         include_dist => {
             summary => 'Include all modules of dist',
@@ -494,10 +491,9 @@ from the same distribution. Module name must be the main module of the
 distribution. Will determine other modules from the `.packlist` file.
 
 _
-            schema => ['array*' => of => 'str*'],
+            schema => ['array*' => of => 'perl::distname*'],
             cmdline_aliases => {},
             tags => ['category:module-selection'],
-            'x.schema.element_entity' => 'distname',
         },
         exclude_module => {
             summary => 'Modules to exclude',
@@ -507,10 +503,9 @@ _
 When you don't want to include a module, specify it here.
 
 _
-            schema => ['array*' => of => 'str*'],
+            schema => ['array*' => of => 'perl::modname*'],
             cmdline_aliases => { E => {}, exclude => {} },
             tags => ['category:module-selection'],
-            'x.schema.element_entity' => 'modulename',
         },
         exclude_pattern => {
             summary => 'Regex patterns of modules to exclude',
@@ -520,10 +515,9 @@ _
 When you don't want to include a pattern of modules, specify it here.
 
 _
-            schema => ['array*' => of => 'str*'],
+            schema => ['array*' => of => 're*'],
             cmdline_aliases => { p => {} },
             tags => ['category:module-selection'],
-            #'x.schema.element_entity' => 'regex',
         },
         exclude_dist => {
             summary => 'Exclude all modules of dist',
@@ -534,10 +528,9 @@ from the same distribution. Module name must be the main module of the
 distribution. Will determine other modules from the `.packlist` file.
 
 _
-            schema => ['array*' => of => 'str*'],
+            schema => ['array*' => of => 'perl::distname*'],
             cmdline_aliases => {},
             tags => ['category:module-selection'],
-            'x.schema.element_entity' => 'distname',
         },
         exclude_core => {
             summary => 'Whether to exclude core modules',
@@ -547,9 +540,8 @@ _
         },
         exclude_list => {
             summary => 'Exclude modules from a list in a file',
-            schema => 'str*', # XXX filename
+            schema => 'filename*',
             tags => ['category:module-selection'],
-            'x.schema.entity' => 'filename',
         },
         perl_version => {
             summary => 'Perl version to target, defaults to current running version',
@@ -693,7 +685,7 @@ _
         use => {
             summary => 'Additional modules to "use"',
             'summary.alt.plurality.singular' => 'Additional module to "use"',
-            schema => ['array*' => of => 'str*'],
+            schema => ['array*' => of => 'perl::modname*'],
             description => <<'_',
 
 Will be passed to the tracer. Will currently only affect the `fatpacker` and
@@ -701,7 +693,6 @@ Will be passed to the tracer. Will currently only affect the `fatpacker` and
 
 _
             tags => ['category:module-selection'],
-            'x.schema.element_entity' => 'modulename',
         },
         args => {
             summary => 'Script arguments',
