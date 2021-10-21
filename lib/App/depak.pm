@@ -1,10 +1,5 @@
 package App::depak;
 
-# AUTHORITY
-# DATE
-# DIST
-# VERSION
-
 use 5.010001;
 use strict;
 use warnings;
@@ -16,6 +11,11 @@ use App::tracepm (); # we need list of trace methods too so we load early
 use File::chdir;
 use File::Slurper qw(write_binary read_binary);
 use version;
+
+# AUTHORITY
+# DATE
+# DIST
+# VERSION
 
 my @ALLOW_XS = qw(List::MoreUtils version::vxs);
 
@@ -350,6 +350,7 @@ sub _pack {
 
     my $res;
     $pack_args{preamble}  = "$shebang\n\n";
+    $pack_args{preamble} .= "# code after shebang\n$self->{code_after_shebang}\n\n" if defined $self->{code_after_shebang};
     $pack_args{postamble} = "\n$script";
     $pack_args{put_hook_at_the_end} = $self->{put_hook_at_the_end};
     if ($self->{pack_method} eq 'datapack') {
@@ -456,6 +457,11 @@ _
             default => '-',
             cmdline_aliases => { o=>{} },
             pos => 1,
+            tags => ['category:output'],
+        },
+        code_after_shebang => {
+            summary => 'Add some code right after shebang line',
+            schema => 'str*',
             tags => ['category:output'],
         },
         include_module => {
