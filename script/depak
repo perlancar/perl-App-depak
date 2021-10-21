@@ -2,14 +2,16 @@
 
 # FRAGMENT id=shcompgen-hint command=depak
 
-# DATE
-# VERSION
-
 use 5.010001;
 use strict;
 use warnings;
 
 use Perinci::CmdLine::depak;
+
+# AUTHORITY
+# DATE
+# DIST
+# VERSION
 
 Perinci::CmdLine::depak->new(
     log => 1,

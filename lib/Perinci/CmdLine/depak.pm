@@ -1,11 +1,14 @@
 package Perinci::CmdLine::depak;
 
-# DATE
-# VERSION
-
 use 5.010;
+use strict;
 use Log::ger;
 use parent qw(Perinci::CmdLine::Lite);
+
+# AUTHORITY
+# DATE
+# DIST
+# VERSION
 
 sub hook_before_read_config_file {
     my ($self, $r) = @_;
