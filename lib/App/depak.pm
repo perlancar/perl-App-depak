@@ -48,8 +48,6 @@ sub _trace {
 }
 
 sub _build_lib {
-    use experimental 'smartmatch';
-
     require Dist::Util;
     require File::Copy;
     require File::Find;
@@ -183,12 +181,12 @@ sub _build_lib {
             }
         }
 
-        if ($self->{exclude_module} && $mod ~~ @{ $self->{exclude_module} }) {
+        if ($self->{exclude_module} && grep { $_ eq $mod } @{ $self->{exclude_module} }) {
             log_info("Excluding %s: skipped", $mod);
             next MOD_TO_FILTER;
         }
         for (@{ $self->{exclude_pattern} // [] }) {
-            if ($mod ~~ /$_/) {
+            if ($mod =~ /$_/) {
                 log_info("Excluding %s: skipped by pattern %s", $mod, $_);
                 next MOD_TO_FILTER;
             }
@@ -200,7 +198,7 @@ sub _build_lib {
                     push @$excluded_distmods, Dist::Util::list_dist_modules($_);
                 }
             }
-            if ($mod ~~ @$excluded_distmods) {
+            if (grep { $_ eq $mod } @$excluded_distmods) {
                 log_info("Excluding %s (by dist): skipped", $mod);
                 next MOD_TO_FILTER;
             }
@@ -225,7 +223,7 @@ sub _build_lib {
                     push @$excluded_list, $emod;
                 }
             }
-            if ($mod ~~ @$excluded_list) {
+            if (grep { $_ eq $mod } @$excluded_list) {
                 log_info("Excluding %s (by list): skipped", $mod);
             }
         }
@@ -242,8 +240,8 @@ sub _build_lib {
 
         unless ($mpath) {
             if (Module::XSOrPP::is_xs($mod)) {
-                unless (!$self->{allow_xs} || $mod ~~ @{ $self->{allow_xs} } ||
-                            $mod ~~ @ALLOW_XS) {
+                unless (!$self->{allow_xs} || grep { $_ eq $mod } @{ $self->{allow_xs} } ||
+                            grep { $_ eq $mod } @ALLOW_XS) {
                     die "Can't add XS module: $mod\n";
                 }
             }
@@ -375,7 +373,6 @@ sub _pack {
 }
 
 sub _test {
-    use experimental 'smartmatch';
     require Capture::Tiny;
     require IPC::System::Options;
 
@@ -387,7 +384,7 @@ sub _test {
     my $i = 0;
     for my $case (@$cases) {
         $i++;
-        log_debug("  Test case %d/%d: %s ...", $i, ~~@$cases, $case->{args});
+        log_debug("  Test case %d/%d: %s ...", $i, scalar(@$cases), $case->{args});
         my @cmd = ($^X);
         push @cmd, @{ $case->{perl_args} } if $case->{perl_args} && @{ $case->{perl_args} };
         push @cmd, $self->{abs_output_file}, @{ $case->{args} };
