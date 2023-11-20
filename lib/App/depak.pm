@@ -780,7 +780,7 @@ _
 };
 sub depak {
     require Cwd;
-    require File::MoreUtil;
+    require File::Util::Test;
     require File::Spec;
     require File::Temp;
 
@@ -832,7 +832,7 @@ sub depak {
         $self->{output_file} = $self->{abs_output_file} = (File::Temp::tempfile())[1];
     } else {
         return [412, "Output file '$self->{output_file}' exists, won't overwrite (see --overwrite)"]
-            if File::MoreUtil::file_exists($self->{output_file}) && !$self->{overwrite};
+            if File::Util::Test::file_exists($self->{output_file}) && !$self->{overwrite};
         return [500, "Can't write to output file '$self->{output_file}': $!"]
             unless open my($fh), ">", $self->{output_file};
     }
